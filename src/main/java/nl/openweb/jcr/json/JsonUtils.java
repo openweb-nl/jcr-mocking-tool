@@ -6,6 +6,7 @@ import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 
 import org.apache.commons.beanutils.ConvertUtilsBean;
 
@@ -18,6 +19,20 @@ import nl.openweb.jcr.domain.Property;
 public class JsonUtils {
 
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+    public static final String PRIMARY_TYPE = "primaryType";
+
+    private static final Set<String> NATIVE_TYPES;
+    public static final String VALUE = "value";
+
+    static {
+        OBJECT_MAPPER.enable(SerializationFeature.INDENT_OUTPUT);
+        HashSet<String> nonNativeTypes = new HashSet<>();
+        nonNativeTypes.add("Long");
+        nonNativeTypes.add("Double");
+        nonNativeTypes.add("Boolean");
+        nonNativeTypes.add("String");
+        NATIVE_TYPES = Collections.unmodifiableSet(nonNativeTypes);
+    }
 
     private JsonUtils() {
         //to prevent instantiation of JsonUtils objects.
@@ -37,7 +52,7 @@ public class JsonUtils {
         result.setName(name);
         List<Object> items = new ArrayList<>(map.size());
         for (Map.Entry<String, Object> entry : map.entrySet()) {
-            if (isPropery(entry)) {
+            if (isProperty(entry)) {
                 Property property = createProperty(entry);
                 items.add(property);
             } else {
@@ -69,12 +84,21 @@ public class JsonUtils {
     }
 
     private static String getValueAsString(Object value) {
-        //FIXME
-        return value.toString();
+        String result;
+        if (isPrimitiveTypeMap(value)) {
+            result = (String) ((Map) value).get("value");
+        } else {
+            result = value.toString();
+        }
+        return result;
     }
 
-    private static boolean isPropery(Map.Entry<String, Object> entry) {
-        return !(entry.getValue() instanceof Map);
+    private static boolean isPrimitiveTypeMap(Object value) {
+        return value instanceof Map && ((Map) value).containsKey(PRIMARY_TYPE);
+    }
+
+    private static boolean isProperty(Map.Entry<String, Object> entry) {
+        return !(entry.getValue() instanceof Map) || ((Map) entry.getValue()).containsKey(PRIMARY_TYPE);
     }
 
     private static Map<String, Object> nodeToMap(Node node) {
@@ -109,8 +133,18 @@ public class JsonUtils {
     }
 
     private static Object convertValue(String value, String type) {
-        ConvertUtilsBean convertUtilsBean = new ConvertUtilsBean();
-        return convertUtilsBean.convert(value, getType(type));
+        Object result = null;
+        if (!NATIVE_TYPES.contains(type)) {
+            Map<String, Object> map = new HashMap<>();
+            map.put(PRIMARY_TYPE, type);
+            map.put(VALUE, value);
+            result = map;
+        } else {
+            ConvertUtilsBean convertUtilsBean = new ConvertUtilsBean();
+            result = convertUtilsBean.convert(value, getType(type));
+        }
+        return result;
+
     }
 
     private static Class<?> getType(String type) {
@@ -140,6 +174,8 @@ public class JsonUtils {
             result = "Double";
         } else if (value instanceof Boolean) {
             result = "Boolean";
+        } else if (isPrimitiveTypeMap(value)) {
+            result = (String) ((Map) value).get(PRIMARY_TYPE);
         }
         return result;
     }
