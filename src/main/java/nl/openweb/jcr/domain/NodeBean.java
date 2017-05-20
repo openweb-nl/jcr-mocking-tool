@@ -41,11 +41,11 @@ import java.util.List;
     "nodeOrProperty"
 })
 @XmlRootElement(name = "node")
-public class Node {
+public class NodeBean {
 
     @XmlElements({
-        @XmlElement(name = "node", type = Node.class),
-        @XmlElement(name = "property", type = Property.class)
+        @XmlElement(name = "node", type = NodeBean.class),
+        @XmlElement(name = "property", type = PropertyBean.class)
     })
     protected List<Object> nodeOrProperty;
     @XmlAttribute(name = "name", namespace = "http://www.jcp.org/jcr/sv/1.0", required = true)
@@ -71,14 +71,14 @@ public class Node {
      * 
      * <p>
      * Objects of the following type(s) are allowed in the list
-     * {@link Node }
-     * {@link Property }
+     * {@link NodeBean }
+     * {@link PropertyBean }
      * 
      * 
      */
     public List<Object> getNodeOrProperty() {
         if (nodeOrProperty == null) {
-            nodeOrProperty = new ArrayList<Object>();
+            nodeOrProperty = new ArrayList<>();
         }
         return this.nodeOrProperty;
     }

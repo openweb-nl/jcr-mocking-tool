@@ -1,6 +1,7 @@
 package nl.openweb.jcr.json;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -8,10 +9,9 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 
-import org.apache.commons.beanutils.ConvertUtilsBean;
-
-import nl.openweb.jcr.domain.Node;
-import nl.openweb.jcr.domain.Property;
+import nl.openweb.jcr.NodeBeanUtils;
+import nl.openweb.jcr.domain.NodeBean;
+import nl.openweb.jcr.domain.PropertyBean;
 
 /**
  * Created by Ebrahim on 5/20/2017.
@@ -19,41 +19,37 @@ import nl.openweb.jcr.domain.Property;
 public class JsonUtils {
 
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
-    public static final String PRIMARY_TYPE = "primaryType";
-
-    private static final Set<String> NATIVE_TYPES;
-    public static final String VALUE = "value";
 
     static {
         OBJECT_MAPPER.enable(SerializationFeature.INDENT_OUTPUT);
-        HashSet<String> nonNativeTypes = new HashSet<>();
-        nonNativeTypes.add("Long");
-        nonNativeTypes.add("Double");
-        nonNativeTypes.add("Boolean");
-        nonNativeTypes.add("String");
-        NATIVE_TYPES = Collections.unmodifiableSet(nonNativeTypes);
     }
 
     private JsonUtils() {
         //to prevent instantiation of JsonUtils objects.
     }
 
-    public static String toJson(Node node) throws JsonProcessingException {
-        return OBJECT_MAPPER.writeValueAsString(nodeToMap(node));
+    public static String toJson(NodeBean node) throws JsonProcessingException {
+        return OBJECT_MAPPER.writeValueAsString(NodeBeanUtils.nodeBeanToMap(node));
     }
 
     @SuppressWarnings("unchecked")
-    public static Node parseJson(String json) throws IOException {
+    public static NodeBean parseJson(InputStream json) throws IOException {
         return mapToNode(OBJECT_MAPPER.readValue(json, Map.class), "");
     }
 
-    private static Node mapToNode(Map<String, Object> map, String name) {
-        Node result = new Node();
+    @SuppressWarnings("unchecked")
+    public static NodeBean parseJson(String json) throws IOException {
+        return mapToNode(OBJECT_MAPPER.readValue(json, Map.class), "");
+    }
+
+    @SuppressWarnings("unchecked")
+    private static NodeBean mapToNode(Map<String, Object> map, String name) {
+        NodeBean result = new NodeBean();
         result.setName(name);
         List<Object> items = new ArrayList<>(map.size());
         for (Map.Entry<String, Object> entry : map.entrySet()) {
-            if (isProperty(entry)) {
-                Property property = createProperty(entry);
+            if (NodeBeanUtils.isProperty(entry)) {
+                PropertyBean property = createProperty(entry);
                 items.add(property);
             } else {
                 items.add(mapToNode((Map<String, Object>) entry.getValue(), entry.getKey()));
@@ -64,120 +60,24 @@ public class JsonUtils {
     }
 
     @SuppressWarnings("unchecked")
-    private static Property createProperty(Map.Entry<String, Object> entry) {
-        Property property = new Property();
+    private static PropertyBean createProperty(Map.Entry<String, Object> entry) {
+        PropertyBean property = new PropertyBean();
         property.setName(entry.getKey());
         boolean multiple = entry.getValue() instanceof Collection;
         property.setMultiple(multiple);
         if (multiple) {
             Collection<Object> val = (Collection<Object>) entry.getValue();
             Optional<Object> first = val.stream().findFirst();
-            String type = first.map(JsonUtils::getValueType).orElse("String");
-            List<String> values = val.stream().map(JsonUtils::getValueAsString).collect(Collectors.toList());
+            String type = first.map(NodeBeanUtils::getValueType).orElse("String");
+            List<String> values = val.stream().map(NodeBeanUtils::getValueAsString).collect(Collectors.toList());
             property.setType(type);
             property.setValue(values);
         } else {
-            property.setType(getValueType(entry.getValue()));
-            property.setValue(Collections.singletonList(getValueAsString(entry.getValue())));
+            property.setType(NodeBeanUtils.getValueType(entry.getValue()));
+            property.setValue(Collections.singletonList(NodeBeanUtils.getValueAsString(entry.getValue())));
         }
         return property;
     }
 
-    private static String getValueAsString(Object value) {
-        String result;
-        if (isPrimitiveTypeMap(value)) {
-            result = (String) ((Map) value).get("value");
-        } else {
-            result = value.toString();
-        }
-        return result;
-    }
-
-    private static boolean isPrimitiveTypeMap(Object value) {
-        return value instanceof Map && ((Map) value).containsKey(PRIMARY_TYPE);
-    }
-
-    private static boolean isProperty(Map.Entry<String, Object> entry) {
-        return !(entry.getValue() instanceof Map) || ((Map) entry.getValue()).containsKey(PRIMARY_TYPE);
-    }
-
-    private static Map<String, Object> nodeToMap(Node node) {
-        Map<String, Object> result = new LinkedHashMap<>();
-        List<Object> items = node.getNodeOrProperty();
-        for (Object item : items) {
-            if (item instanceof Property) {
-                Property property = (Property) item;
-                result.put((property).getName(), getValue(property));
-            } else if (item instanceof Node) {
-                result.put(((Node) item).getName(), nodeToMap((Node) item));
-            }
-        }
-        return result;
-    }
-
-    private static Object getValue(Property property) {
-        Object result = null;
-        if (property != null && property.getValue() != null && !property.getValue().isEmpty()) {
-
-            if (property.isMultiple() != null && property.isMultiple()) {
-                List<Object> list = new ArrayList<>();
-                for (String v : property.getValue()) {
-                    list.add(convertValue(v, property.getType()));
-                }
-                result = list;
-            } else {
-                result = convertValue(property.getValue().get(0), property.getType());
-            }
-        }
-        return result;
-    }
-
-    private static Object convertValue(String value, String type) {
-        Object result = null;
-        if (!NATIVE_TYPES.contains(type)) {
-            Map<String, Object> map = new HashMap<>();
-            map.put(PRIMARY_TYPE, type);
-            map.put(VALUE, value);
-            result = map;
-        } else {
-            ConvertUtilsBean convertUtilsBean = new ConvertUtilsBean();
-            result = convertUtilsBean.convert(value, getType(type));
-        }
-        return result;
-
-    }
-
-    private static Class<?> getType(String type) {
-        Class<?> result;
-        switch (type) {
-            case "Long":
-                result = Long.class;
-                break;
-            case "Double":
-                result = Double.class;
-                break;
-            case "Boolean":
-                result = Boolean.class;
-                break;
-            default:
-                result = String.class;
-                break;
-        }
-        return result;
-    }
-
-    private static String getValueType(Object value) {
-        String result = "String";
-        if (value instanceof Long || value instanceof Integer) {
-            result = "Long";
-        } else if (value instanceof Double || value instanceof Float) {
-            result = "Double";
-        } else if (value instanceof Boolean) {
-            result = "Boolean";
-        } else if (isPrimitiveTypeMap(value)) {
-            result = (String) ((Map) value).get(PRIMARY_TYPE);
-        }
-        return result;
-    }
 
 }

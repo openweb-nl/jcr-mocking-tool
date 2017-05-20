@@ -41,19 +41,19 @@ public class ObjectFactory {
     }
 
     /**
-     * Create an instance of {@link Node }
+     * Create an instance of {@link NodeBean }
      * 
      */
-    public Node createNode() {
-        return new Node();
+    public NodeBean createNode() {
+        return new NodeBean();
     }
 
     /**
-     * Create an instance of {@link Property }
+     * Create an instance of {@link PropertyBean }
      * 
      */
-    public Property createProperty() {
-        return new Property();
+    public PropertyBean createProperty() {
+        return new PropertyBean();
     }
 
     /**
@@ -62,7 +62,7 @@ public class ObjectFactory {
      */
     @XmlElementDecl(namespace = "http://www.jcp.org/jcr/sv/1.0", name = "value")
     public JAXBElement<String> createValue(String value) {
-        return new JAXBElement<String>(_Value_QNAME, String.class, null, value);
+        return new JAXBElement<>(_Value_QNAME, String.class, null, value);
     }
 
 }

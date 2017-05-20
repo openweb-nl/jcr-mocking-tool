@@ -9,7 +9,7 @@ import java.util.stream.Collectors;
 import org.junit.Assert;
 import org.junit.Test;
 
-import nl.openweb.jcr.domain.Node;
+import nl.openweb.jcr.domain.NodeBean;
 
 public class JsonUtilsTest {
 
@@ -18,7 +18,7 @@ public class JsonUtilsTest {
     public void test() throws Exception {
         URI uri = getClass().getClassLoader().getResource("node.json").toURI();
         String json = Files.readAllLines(Paths.get(uri)).stream().collect(Collectors.joining("\n"));
-        Node node = JsonUtils.parseJson(json);
+        NodeBean node = JsonUtils.parseJson(json);
         Assert.assertEquals(json, JsonUtils.toJson(node).replaceAll("\\r\\n", "\n"));
     }
 

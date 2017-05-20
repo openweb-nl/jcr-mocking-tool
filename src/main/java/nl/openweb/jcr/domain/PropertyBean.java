@@ -42,7 +42,7 @@ import java.util.List;
     "value"
 })
 @XmlRootElement(name = "property")
-public class Property {
+public class PropertyBean {
 
     protected List<String> value;
     @XmlAttribute(name = "multiple", namespace = "http://www.jcp.org/jcr/sv/1.0")
@@ -80,7 +80,7 @@ public class Property {
      */
     public List<String> getValue() {
         if (value == null) {
-            value = new ArrayList<String>();
+            value = new ArrayList<>();
         }
         return this.value;
     }
