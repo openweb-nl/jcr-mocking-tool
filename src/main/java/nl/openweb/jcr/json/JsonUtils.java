@@ -52,11 +52,22 @@ public class JsonUtils {
                 PropertyBean property = createProperty(entry);
                 items.add(property);
             } else {
-                items.add(mapToNode((Map<String, Object>) entry.getValue(), entry.getKey()));
+                addNodeBean(items, entry);
             }
         }
         result.setNodeOrProperty(items);
         return result;
+    }
+
+    private static void addNodeBean(List<Object> items, Map.Entry<String, Object> entry) {
+        Object value = entry.getValue();
+        if (value instanceof Collection) {
+            for (Object o : ((Collection) value)) {
+                items.add(mapToNode((Map<String, Object>) o, entry.getKey()));
+            }
+        } else {
+            items.add(mapToNode((Map<String, Object>) value, entry.getKey()));
+        }
     }
 
     @SuppressWarnings("unchecked")

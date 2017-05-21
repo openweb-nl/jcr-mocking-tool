@@ -35,14 +35,44 @@ public class NodeBeanUtils {
                 PropertyBean property = (PropertyBean) item;
                 result.put((property).getName(), getValue(property));
             } else if (item instanceof NodeBean) {
-                result.put(((NodeBean) item).getName(), nodeBeanToMap((NodeBean) item));
+                addSubnode(result, (NodeBean) item);
             }
         }
         return result;
     }
 
+    private static void addSubnode(Map<String, Object> result, NodeBean item) {
+        String key = item.getName();
+        Map<String, Object> subnode = nodeBeanToMap(item);
+        if (result.containsKey(key)) {
+            Object o = result.get(key);
+            if (o instanceof List) {
+                ((List) o).add(subnode);
+            } else {
+                List<Object> members = new ArrayList<>();
+                members.add(o);
+                members.add(subnode);
+                result.put(key, members);
+            }
+
+        } else {
+            result.put(key, subnode);
+        }
+    }
+
     public static boolean isProperty(Map.Entry<String, Object> entry) {
-        return !(entry.getValue() instanceof Map) || ((Map) entry.getValue()).containsKey(PRIMARY_TYPE);
+        boolean result;
+        Object value = entry.getValue();
+        if (value instanceof Collection) {
+            result = ((Collection<Object>) value).stream().findFirst().map(NodeBeanUtils::isItemProperty).orElse(true);
+        } else {
+            result = isItemProperty(value);
+        }
+        return result;
+    }
+
+    private static boolean isItemProperty(Object value) {
+        return !(value instanceof Map) || ((Map) value).containsKey(PRIMARY_TYPE);
     }
 
     public static String getValueType(Object value) {

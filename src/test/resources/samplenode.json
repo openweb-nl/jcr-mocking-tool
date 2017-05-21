@@ -1,0 +1,27 @@
+{
+  "jcr:primaryType" : "nt:unstructured",
+  "singleValueString" : "stringValue",
+  "multivalueString" : [ "stringValue01", "stringValue02", "stringValue03" ],
+  "singleValueBoolean" : true,
+  "multivalueBoolean" : [ true, false, true ],
+  "singleValueLong" : 20,
+  "multivalueLong" : [ 2, 6, 232 ],
+  "singlevalueDate" : {
+    "primaryType" : "Date",
+    "value" : "2016-11-03T10:06:35.101+01:00"
+  },
+  "multivalueDate" : [ {
+    "primaryType" : "Date",
+    "value" : "2016-11-03T10:06:35.101+01:00"
+  }, {
+    "primaryType" : "Date",
+    "value" : "2017-05-20T8:28:35.101+01:00"
+  } ],
+  "subnode" : [ {
+    "jcr:primaryType" : "nt:unstructured",
+    "singleValueString" : "stringValue1"
+  }, {
+    "jcr:primaryType" : "nt:unstructured",
+    "singleValueString" : "stringValue2"
+  } ]
+}
