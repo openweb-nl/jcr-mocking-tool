@@ -3,8 +3,12 @@ package nl.openweb.jcr;
 import javax.jcr.*;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Map;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.util.*;
 import java.util.function.Supplier;
+
+import org.apache.commons.beanutils.ConvertUtilsBean;
 
 import nl.openweb.jcr.domain.NodeBean;
 import nl.openweb.jcr.json.JsonUtils;
@@ -15,8 +19,11 @@ import nl.openweb.jcr.json.JsonUtils;
 public class Importer {
 
     public static final String JCR_PRIMARY_TYPE = "jcr:primaryType";
-    private boolean addMixins = true;
-    private Supplier<Node> rootNodeSupplier;
+    public static final String JCR_MIXIN_TYPES = "jcr:mixinTypes";
+
+    private final boolean addMixins;
+    private final boolean addUuid;
+    private final Supplier<Node> rootNodeSupplier;
 
     public Node createNodesFromJson(String json) throws IOException, RepositoryException {
         NodeBean nodeBean = JsonUtils.parseJson(json);
@@ -39,37 +46,96 @@ public class Importer {
         ValueFactory valueFactory = node.getSession().getValueFactory();
         for (Map.Entry<String, Object> entry : map.entrySet()) {
             if (NodeBeanUtils.isProperty(entry)) {
-                String name = entry.getKey();
-                String value = NodeBeanUtils.getValueAsString(entry.getValue());
-                if ("jcr:mixinTypes".equals(name) && addMixins) {
-                    node.addMixin(value);
-                }
-
-                String valueType = NodeBeanUtils.getValueType(entry.getValue());
-                int type = PropertyType.valueFromName(valueType);
-                Value v = valueFactory.createValue(value, type);
-                node.setProperty(name, v);
+                addProperty(node, valueFactory, entry);
             } else {
-                Node subNode;
-                Map subNodeMap = (Map) entry.getValue();
-                if (subNodeMap.containsKey(JCR_PRIMARY_TYPE)) {
-                    subNode = node.addNode(node.getName(), subNodeMap.get(JCR_PRIMARY_TYPE).toString());
-                } else {
-                    subNode = node.addNode(node.getName());
-                }
-                updateNode(subNode, subNodeMap);
+                addSubnode(node, entry);
             }
         }
+    }
+
+    private void addSubnode(Node node, Map.Entry<String, Object> entry) throws RepositoryException {
+        Node subNode;
+        Map subNodeMap = (Map) entry.getValue();
+        if (subNodeMap.containsKey(JCR_PRIMARY_TYPE)) {
+            subNode = node.addNode(entry.getKey(), subNodeMap.get(JCR_PRIMARY_TYPE).toString());
+        } else {
+            subNode = node.addNode(entry.getKey());
+        }
+        updateNode(subNode, subNodeMap);
+    }
+
+    private void addProperty(Node node, ValueFactory valueFactory, Map.Entry<String, Object> entry) throws RepositoryException {
+        String name = entry.getKey();
+        if (entry.getValue() instanceof Collection) {
+            Collection<Object> values = (Collection) entry.getValue();
+            List<Value> jcrValues = new ArrayList<>();
+            for (Iterator<Object> iterator = values.iterator(); iterator.hasNext(); ) {
+
+                Value jcrValue = toJcrValue(valueFactory, iterator.next());
+                if (JCR_MIXIN_TYPES.equals(name) && addMixins) {
+                    node.addMixin(jcrValue.getString());
+                }
+                jcrValues.add(jcrValue);
+            }
+            node.setProperty(name, jcrValues.toArray(new Value[jcrValues.size()]));
+        } else {
+            Value jcrValue = toJcrValue(valueFactory, entry.getValue());
+            if (JCR_MIXIN_TYPES.equals(name) && addMixins) {
+                node.addMixin(jcrValue.getString());
+                node.setProperty(name, new Value[]{jcrValue});
+            } if ("jcr:uuid".equals(name) && addUuid) {
+                setUuid(node, jcrValue.getString());
+            } else {
+                node.setProperty(name, jcrValue);
+            }
+        }
+
+
+    }
+
+    private void setUuid(Node node, String uuid) {
+        try {
+            Method setter = node.getClass().getMethod("setIdentifier", String.class);
+            setter.invoke(node, uuid);
+        } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private Value toJcrValue(ValueFactory valueFactory, Object value) throws ValueFormatException {
+        Value result;
+        String valueType = NodeBeanUtils.getValueType(value);
+        ConvertUtilsBean convertUtilsBean = new ConvertUtilsBean();
+        int type = PropertyType.valueFromName(valueType);
+        String valueAsString = NodeBeanUtils.getValueAsString(value);
+        switch (type) {
+            case PropertyType.BOOLEAN:
+                result = valueFactory.createValue((Boolean) convertUtilsBean.convert(valueAsString, Boolean.class));
+                break;
+            case PropertyType.DOUBLE:
+                result = valueFactory.createValue((Double) convertUtilsBean.convert(valueAsString, Double.class));
+                break;
+            case PropertyType.LONG:
+                result = valueFactory.createValue((Long) convertUtilsBean.convert(valueAsString, Long.class));
+                break;
+            default:
+                result = valueFactory.createValue(valueAsString, type);
+                break;
+        }
+        return result;
     }
 
     private Importer(Builder builder) {
         this.addMixins = builder.addMixins;
         this.rootNodeSupplier = builder.rootNodeSupplier;
+        this.addUuid = builder.addUuid;
     }
 
     public static class Builder {
         private boolean addMixins = true;
+        private boolean addUuid = false;
         private final Supplier<Node> rootNodeSupplier;
+
 
         public Builder(Supplier<Node> rootNodeSupplier) {
             this.rootNodeSupplier = rootNodeSupplier;
@@ -80,6 +146,11 @@ public class Importer {
 
         public Builder setAddMixins(boolean addMixins) {
             this.addMixins = addMixins;
+            return this;
+        }
+
+        public Builder setAddUuid(boolean addUuid) {
+            this.addUuid = addUuid;
             return this;
         }
 

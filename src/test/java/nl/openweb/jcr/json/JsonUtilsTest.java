@@ -25,7 +25,7 @@ public class JsonUtilsTest {
     }
 
     @Test
-    public void sameNameSiblingsTests() throws IOException, URISyntaxException {
+    public void sameNameSiblingsTest() throws IOException, URISyntaxException {
         String json = loadJson("samplenode.json");
         NodeBean node = JsonUtils.parseJson(json);
         NodeBean sameNameSibling1 = (NodeBean) node.getNodeOrProperty().get(9);
