@@ -37,9 +37,20 @@ public class JsonUtils {
         return mapToNode(OBJECT_MAPPER.readValue(json, Map.class), "");
     }
 
+
     @SuppressWarnings("unchecked")
     public static NodeBean parseJson(String json) throws IOException {
         return mapToNode(OBJECT_MAPPER.readValue(json, Map.class), "");
+    }
+
+    @SuppressWarnings("unchecked")
+    public static Map<String, Object> parseJsonMap(String json) throws IOException {
+        return OBJECT_MAPPER.readValue(json, Map.class);
+    }
+
+    @SuppressWarnings("unchecked")
+    public static Map<String, Object> parseJsonMap(InputStream json) throws IOException {
+        return OBJECT_MAPPER.readValue(json, Map.class);
     }
 
     @SuppressWarnings("unchecked")

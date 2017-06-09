@@ -10,7 +10,6 @@ import java.util.function.Supplier;
 
 import org.apache.commons.beanutils.ConvertUtilsBean;
 
-import nl.openweb.jcr.domain.NodeBean;
 import nl.openweb.jcr.json.JsonUtils;
 
 /**
@@ -20,24 +19,24 @@ public class Importer {
 
     public static final String JCR_PRIMARY_TYPE = "jcr:primaryType";
     public static final String JCR_MIXIN_TYPES = "jcr:mixinTypes";
-
+    public static final String JCR_UUID = "jcr:uuid";
+    private final Set<String> protectedProperties;
+    private final boolean setProtectedProperties;
+    private final boolean saveSession;
     private final boolean addMixins;
     private final boolean addUuid;
     private final Supplier<Node> rootNodeSupplier;
 
     public Node createNodesFromJson(String json) throws IOException, RepositoryException {
-        NodeBean nodeBean = JsonUtils.parseJson(json);
-        return createNodeFromNodeBean(nodeBean);
+        return createNodeFromNodeBean(JsonUtils.parseJsonMap(json));
     }
 
     public Node createNodesFromJson(InputStream inputStream) throws IOException, RepositoryException {
-        NodeBean nodeBean = JsonUtils.parseJson(inputStream);
-        return createNodeFromNodeBean(nodeBean);
+        return createNodeFromNodeBean(JsonUtils.parseJsonMap(inputStream));
     }
 
-    private Node createNodeFromNodeBean(NodeBean nodeBean) throws RepositoryException {
+    private Node createNodeFromNodeBean(Map<String, Object> map) throws RepositoryException {
         Node node = rootNodeSupplier.get();
-        Map<String, Object> map = NodeBeanUtils.nodeBeanToMap(nodeBean);
         updateNode(node, map);
         return node;
     }
@@ -48,20 +47,29 @@ public class Importer {
             if (NodeBeanUtils.isProperty(entry)) {
                 addProperty(node, valueFactory, entry);
             } else {
-                addSubnode(node, entry);
+                addSubnode(node, entry.getKey(), entry.getValue());
             }
+        }
+        if (saveSession) {
+            node.getSession().save();
         }
     }
 
-    private void addSubnode(Node node, Map.Entry<String, Object> entry) throws RepositoryException {
+    private void addSubnode(Node node, String name, Object obj) throws RepositoryException {
         Node subNode;
-        Map subNodeMap = (Map) entry.getValue();
-        if (subNodeMap.containsKey(JCR_PRIMARY_TYPE)) {
-            subNode = node.addNode(entry.getKey(), subNodeMap.get(JCR_PRIMARY_TYPE).toString());
-        } else {
-            subNode = node.addNode(entry.getKey());
+        if (obj instanceof Map) {
+            Map map = (Map) obj;
+            if (map.containsKey(JCR_PRIMARY_TYPE)) {
+                subNode = node.addNode(name, map.get(JCR_PRIMARY_TYPE).toString());
+            } else {
+                subNode = node.addNode(name);
+            }
+            updateNode(subNode, map);
+        } else if (obj instanceof Collection) {
+            for (Object item : (Collection) obj) {
+                addSubnode(node, name, item);
+            }
         }
-        updateNode(subNode, subNodeMap);
     }
 
     private void addProperty(Node node, ValueFactory valueFactory, Map.Entry<String, Object> entry) throws RepositoryException {
@@ -73,19 +81,24 @@ public class Importer {
 
                 Value jcrValue = toJcrValue(valueFactory, iterator.next());
                 if (JCR_MIXIN_TYPES.equals(name) && addMixins) {
-                    node.addMixin(jcrValue.getString());
+                        node.addMixin(jcrValue.getString());
                 }
                 jcrValues.add(jcrValue);
             }
-            node.setProperty(name, jcrValues.toArray(new Value[jcrValues.size()]));
+            if (!protectedProperties.contains(name) || setProtectedProperties) {
+                node.setProperty(name, jcrValues.toArray(new Value[jcrValues.size()]));
+            }
         } else {
             Value jcrValue = toJcrValue(valueFactory, entry.getValue());
+            if ("jcr:uuid".equals(name) && addUuid) {
+                setUuid(node, jcrValue.getString());
+            }
             if (JCR_MIXIN_TYPES.equals(name) && addMixins) {
                 node.addMixin(jcrValue.getString());
-                node.setProperty(name, new Value[]{jcrValue});
-            } if ("jcr:uuid".equals(name) && addUuid) {
-                setUuid(node, jcrValue.getString());
-            } else {
+                if (setProtectedProperties) {
+                    node.setProperty(name, new Value[]{jcrValue});
+                }
+            } else if (!protectedProperties.contains(name) || setProtectedProperties) {
                 node.setProperty(name, jcrValue);
             }
         }
@@ -98,7 +111,7 @@ public class Importer {
             Method setter = node.getClass().getMethod("setIdentifier", String.class);
             setter.invoke(node, uuid);
         } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
-            e.printStackTrace();
+            // ignore
         }
     }
 
@@ -129,11 +142,20 @@ public class Importer {
         this.addMixins = builder.addMixins;
         this.rootNodeSupplier = builder.rootNodeSupplier;
         this.addUuid = builder.addUuid;
+        this.setProtectedProperties = builder.setProtectedProperties;
+        this.saveSession = builder.saveSession;
+        HashSet<String> set = new HashSet<>();
+        set.add(JCR_PRIMARY_TYPE);
+        set.add(JCR_MIXIN_TYPES);
+        set.add(JCR_UUID);
+        this.protectedProperties = Collections.unmodifiableSet(set);
     }
 
     public static class Builder {
         private boolean addMixins = true;
         private boolean addUuid = false;
+        private boolean setProtectedProperties = false;
+        private boolean saveSession = true;
         private final Supplier<Node> rootNodeSupplier;
 
 
@@ -151,6 +173,16 @@ public class Importer {
 
         public Builder setAddUuid(boolean addUuid) {
             this.addUuid = addUuid;
+            return this;
+        }
+
+        public Builder setProtectedProperties(boolean setProtectedProperties) {
+            this.setProtectedProperties = setProtectedProperties;
+            return this;
+        }
+
+        public Builder setSaveSession(boolean saveSession) {
+            this.saveSession = saveSession;
             return this;
         }
 

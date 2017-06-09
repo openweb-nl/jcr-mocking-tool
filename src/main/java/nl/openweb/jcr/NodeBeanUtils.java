@@ -12,7 +12,7 @@ public class NodeBeanUtils {
     private static final Set<String> NATIVE_TYPES;
 
     public static final String VALUE = "value";
-    public static final String PRIMARY_TYPE = "primaryType";
+    public static final String PRIMITIVE_TYPE = "primitiveType";
 
     static {
         HashSet<String> nonNativeTypes = new HashSet<>();
@@ -72,7 +72,7 @@ public class NodeBeanUtils {
     }
 
     private static boolean isItemProperty(Object value) {
-        return !(value instanceof Map) || ((Map) value).containsKey(PRIMARY_TYPE);
+        return !(value instanceof Map) || ((Map) value).containsKey(PRIMITIVE_TYPE);
     }
 
     public static String getValueType(Object value) {
@@ -84,7 +84,7 @@ public class NodeBeanUtils {
         } else if (value instanceof Boolean) {
             result = "Boolean";
         } else if (isPrimitiveTypeMap(value)) {
-            result = (String) ((Map) value).get(PRIMARY_TYPE);
+            result = (String) ((Map) value).get(PRIMITIVE_TYPE);
         }
         return result;
     }
@@ -100,7 +100,7 @@ public class NodeBeanUtils {
     }
 
     private static boolean isPrimitiveTypeMap(Object value) {
-        return value instanceof Map && ((Map) value).containsKey(PRIMARY_TYPE);
+        return value instanceof Map && ((Map) value).containsKey(PRIMITIVE_TYPE);
     }
 
 
@@ -126,7 +126,7 @@ public class NodeBeanUtils {
         Object result = null;
         if (!NATIVE_TYPES.contains(type)) {
             Map<String, Object> map = new HashMap<>();
-            map.put(PRIMARY_TYPE, type);
+            map.put(PRIMITIVE_TYPE, type);
             map.put(VALUE, value);
             result = map;
         } else {
