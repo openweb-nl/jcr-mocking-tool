@@ -1,0 +1,40 @@
+{
+  "jcr:primaryType" : "nt:unstructured",
+  "jcr:uuid" : "cafebabe-cafe-babe-cafe-babecafebabe",
+  "rootNodeProperty" : "rootNodePropertyValue",
+  "subnode" : {
+    "jcr:primaryType" : "jmt:folder",
+    "jcr:mixinTypes" : "mix:referenceable",
+    "parentNodeProperty" : "parentNodePropertyValue",
+    "subsubnode" : {
+      "jcr:mixinTypes" : [ "mix:referenceable", "mix:test" ],
+      "jcr:primaryType" : "jmt:item",
+      "singleValueString" : "stringValue",
+      "multivalueString" : [ "stringValue01", "stringValue02", "stringValue03" ],
+      "singleValueBoolean" : true,
+      "multivalueBoolean" : [ true, false, true ],
+      "singleValueLong" : 20,
+      "multivalueLong" : [ 2, 6, 232 ],
+      "singleValueDouble" : 20.0,
+      "multivalueDouble" : [ 2.0, 6.0, 232.0 ],
+      "singlevalueDate" : {
+        "primitiveType" : "Date",
+        "value" : "2016-11-03T10:06:35.101+01:00"
+      },
+      "multivalueDate" : [ {
+        "primitiveType" : "Date",
+        "value" : "2016-11-03T10:06:35.101+01:00"
+      }, {
+        "primitiveType" : "Date",
+        "value" : "2017-05-20T08:28:35.101+01:00"
+      } ]
+    },
+    "sameNameSiblings" : [ {
+      "jcr:primaryType" : "jmt:item",
+      "singleValueString" : "stringValue1"
+    }, {
+      "jcr:primaryType" : "jmt:item",
+      "singleValueString" : "stringValue2"
+    } ]
+  }
+}

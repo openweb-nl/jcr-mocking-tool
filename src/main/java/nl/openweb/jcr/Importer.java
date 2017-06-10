@@ -6,11 +6,11 @@ import java.io.InputStream;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.*;
-import java.util.function.Supplier;
 
 import org.apache.commons.beanutils.ConvertUtilsBean;
 
 import nl.openweb.jcr.json.JsonUtils;
+import nl.openweb.jcr.utils.NodeTypeUtils;
 
 /**
  * Created by Ebrahim on 5/20/2017.
@@ -25,7 +25,8 @@ public class Importer {
     private final boolean saveSession;
     private final boolean addMixins;
     private final boolean addUuid;
-    private final Supplier<Node> rootNodeSupplier;
+    private final boolean addUnknownTypes;
+    private final SupplierWithException<Node> rootNodeSupplier;
 
     public Node createNodesFromJson(String json) throws IOException, RepositoryException {
         return createNodeFromNodeBean(JsonUtils.parseJsonMap(json));
@@ -35,10 +36,14 @@ public class Importer {
         return createNodeFromNodeBean(JsonUtils.parseJsonMap(inputStream));
     }
 
-    private Node createNodeFromNodeBean(Map<String, Object> map) throws RepositoryException {
-        Node node = rootNodeSupplier.get();
-        updateNode(node, map);
-        return node;
+    private Node createNodeFromNodeBean(Map<String, Object> map) throws JcrImporterException {
+        try {
+            Node node = rootNodeSupplier.get();
+            updateNode(node, map);
+            return node;
+        } catch (Exception e) {
+            throw new JcrImporterException(e.getMessage(), e);
+        }
     }
 
     private void updateNode(Node node, Map<String, Object> map) throws RepositoryException {
@@ -60,7 +65,11 @@ public class Importer {
         if (obj instanceof Map) {
             Map map = (Map) obj;
             if (map.containsKey(JCR_PRIMARY_TYPE)) {
-                subNode = node.addNode(name, map.get(JCR_PRIMARY_TYPE).toString());
+                String nodeTypeName = map.get(JCR_PRIMARY_TYPE).toString();
+                if (addUnknownTypes) {
+                    NodeTypeUtils.createNodeType(node.getSession(), nodeTypeName);
+                }
+                subNode = node.addNode(name, nodeTypeName);
             } else {
                 subNode = node.addNode(name);
             }
@@ -78,10 +87,13 @@ public class Importer {
             Collection<Object> values = (Collection) entry.getValue();
             List<Value> jcrValues = new ArrayList<>();
             for (Iterator<Object> iterator = values.iterator(); iterator.hasNext(); ) {
-
                 Value jcrValue = toJcrValue(valueFactory, iterator.next());
                 if (JCR_MIXIN_TYPES.equals(name) && addMixins) {
-                        node.addMixin(jcrValue.getString());
+                    String mixinName = jcrValue.getString();
+                    if (addUnknownTypes) {
+                        NodeTypeUtils.createMixin(node.getSession(), mixinName);
+                    }
+                    node.addMixin(mixinName);
                 }
                 jcrValues.add(jcrValue);
             }
@@ -94,7 +106,11 @@ public class Importer {
                 setUuid(node, jcrValue.getString());
             }
             if (JCR_MIXIN_TYPES.equals(name) && addMixins) {
-                node.addMixin(jcrValue.getString());
+                String mixinName = jcrValue.getString();
+                if (addUnknownTypes) {
+                    NodeTypeUtils.createMixin(node.getSession(), mixinName);
+                }
+                node.addMixin(mixinName);
                 if (setProtectedProperties) {
                     node.setProperty(name, new Value[]{jcrValue});
                 }
@@ -144,6 +160,7 @@ public class Importer {
         this.addUuid = builder.addUuid;
         this.setProtectedProperties = builder.setProtectedProperties;
         this.saveSession = builder.saveSession;
+        this.addUnknownTypes = builder.addUnknownTypes;
         HashSet<String> set = new HashSet<>();
         set.add(JCR_PRIMARY_TYPE);
         set.add(JCR_MIXIN_TYPES);
@@ -156,22 +173,23 @@ public class Importer {
         private boolean addUuid = false;
         private boolean setProtectedProperties = false;
         private boolean saveSession = true;
-        private final Supplier<Node> rootNodeSupplier;
+        private boolean addUnknownTypes = false;
+        private final SupplierWithException<Node> rootNodeSupplier;
 
 
-        public Builder(Supplier<Node> rootNodeSupplier) {
+        public Builder(SupplierWithException<Node> rootNodeSupplier) {
             this.rootNodeSupplier = rootNodeSupplier;
             if (this.rootNodeSupplier == null) {
                 throw new IllegalArgumentException("supplier is required.");
             }
         }
 
-        public Builder setAddMixins(boolean addMixins) {
+        public Builder addMixins(boolean addMixins) {
             this.addMixins = addMixins;
             return this;
         }
 
-        public Builder setAddUuid(boolean addUuid) {
+        public Builder addUuid(boolean addUuid) {
             this.addUuid = addUuid;
             return this;
         }
@@ -181,14 +199,24 @@ public class Importer {
             return this;
         }
 
-        public Builder setSaveSession(boolean saveSession) {
+        public Builder saveSession(boolean saveSession) {
             this.saveSession = saveSession;
+            return this;
+        }
+
+        public Builder addUnknownTypes(boolean addUnknownTypes) {
+            this.addUnknownTypes = addUnknownTypes;
             return this;
         }
 
         public Importer build() {
             return new Importer(this);
         }
+    }
+
+    @FunctionalInterface
+    interface SupplierWithException<T> {
+        T get() throws Exception;
     }
 
 }

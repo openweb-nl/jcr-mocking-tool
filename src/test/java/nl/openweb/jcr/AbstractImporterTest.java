@@ -1,0 +1,123 @@
+package nl.openweb.jcr;
+
+import javax.jcr.*;
+import java.io.InputStream;
+import java.util.Calendar;
+import java.util.Date;
+
+import org.hamcrest.MatcherAssert;
+import org.hamcrest.Matchers;
+import org.junit.After;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
+
+
+import static org.junit.Assert.*;
+
+public abstract class AbstractImporterTest {
+
+    protected Node rootNode;
+
+    @Before
+    public void init() throws Exception {
+        try (InputStream inputStream = getClass().getClassLoader().getResourceAsStream("nodes.json")) {
+            Importer importer = createImporter();
+            rootNode = importer.createNodesFromJson(inputStream);
+        }
+    }
+
+    @After
+    public void teardown() throws Exception {
+        shutdown();
+    }
+
+    protected abstract void shutdown() throws Exception;
+
+    protected abstract Importer createImporter() throws Exception;
+
+    @Test
+    public void propertyTest() throws RepositoryException {
+        propertyBasicValidationForSingleValue(rootNode, "rootNodeProperty", PropertyType.STRING, "rootNodePropertyValue", Value::getString);
+        Node subnode = rootNode.getNode("subnode");
+        propertyBasicValidationForSingleValue(subnode, "parentNodeProperty", PropertyType.STRING, "parentNodePropertyValue", Value::getString);
+        Node subsubnode = rootNode.getNode("subnode/subsubnode");
+        propertyBasicValidationForSingleValue(subsubnode, "singleValueString", PropertyType.STRING, "stringValue", Value::getString);
+        propertyBasicValidationForMultiValue(subsubnode, "multivalueString", PropertyType.STRING, new Object[]{"stringValue01", "stringValue02", "stringValue03"}, Value::getString);
+        propertyBasicValidationForSingleValue(subsubnode, "singleValueBoolean", PropertyType.BOOLEAN, true, Value::getBoolean);
+        propertyBasicValidationForMultiValue(subsubnode, "multivalueBoolean", PropertyType.BOOLEAN, new Object[]{true, false, true}, Value::getBoolean);
+        propertyBasicValidationForSingleValue(subsubnode, "singleValueLong", PropertyType.LONG, 20L, Value::getLong);
+        propertyBasicValidationForMultiValue(subsubnode, "multivalueLong", PropertyType.LONG, new Object[]{2L, 6L, 232L}, Value::getLong);
+        propertyBasicValidationForSingleValue(subsubnode, "singleValueDouble", PropertyType.DOUBLE, 20.0, Value::getDouble);
+        propertyBasicValidationForMultiValue(subsubnode, "multivalueDouble", PropertyType.DOUBLE, new Object[]{2.0, 6.0, 232.0}, Value::getDouble);
+        propertyBasicValidationForSingleValue(subsubnode, "singlevalueDate", PropertyType.DATE, getCalendar(1478163995101L), Value::getDate);
+        propertyBasicValidationForMultiValue(subsubnode, "multivalueDate", PropertyType.DATE, new Object[]{getCalendar(1478163995101L), getCalendar(1495265315101L)}, Value::getDate);
+
+    }
+
+    @Test
+    public void sameNameSiblingsTest() throws RepositoryException {
+        Node sameNameSibling1 = rootNode.getNode("subnode/sameNameSiblings");
+        Assert.assertNotNull(sameNameSibling1);
+        propertyBasicValidationForSingleValue(sameNameSibling1, "singleValueString", PropertyType.STRING, "stringValue1", Value::getString);
+        Node sameNameSibling2 = rootNode.getNode("subnode/sameNameSiblings[2]");
+        Assert.assertNotNull(sameNameSibling2);
+        propertyBasicValidationForSingleValue(sameNameSibling2, "singleValueString", PropertyType.STRING, "stringValue2", Value::getString);
+    }
+
+    @Test
+    public void identifierTest() throws RepositoryException {
+        assertEquals("cafebabe-cafe-babe-cafe-babecafebabe", rootNode.getIdentifier());
+    }
+
+    @Test
+    public void mixinTest() throws RepositoryException {
+        Node node = rootNode.getNode("subnode/subsubnode");
+        Property property = node.getProperty("jcr:mixinTypes");
+        for (Value v : property.getValues()) {
+            MatcherAssert.assertThat("Unexpected mixin", v.getString(),
+                    Matchers.is(Matchers.oneOf("mix:test", "mix:referenceable")));
+        }
+        assertTrue(node.isNodeType("mix:test"));
+        assertNotNull(node.getMixinNodeTypes());
+
+        assertTrue(rootNode.getNode("subnode/subsubnode").isNodeType("mix:referenceable"));
+    }
+
+    protected Calendar getCalendar(long date) {
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTime(new Date(date));
+        return calendar;
+    }
+
+    protected void propertyBasicValidationForSingleValue(Node node, String propertyName, int propertyType, Object expectedValue, ExtractValue extractor) throws RepositoryException {
+        Property property = node.getProperty(propertyName);
+        assertFalse(property.isMultiple());
+        assertEquals(propertyType, property.getType());
+        Value value = property.getValue();
+        Object actualValue = extractor.apply(value);
+        if (propertyType == PropertyType.DATE) {
+            assertEquals(((Calendar) expectedValue).getTime().getTime(), ((Calendar) actualValue).getTime().getTime());
+        } else {
+            assertEquals(expectedValue, actualValue);
+        }
+    }
+
+    protected void propertyBasicValidationForMultiValue(Node node, String propertyName, int propertyType, Object[] expectedValues, ExtractValue extractor) throws RepositoryException {
+        Property property = node.getProperty(propertyName);
+        assertTrue(property.isMultiple());
+        assertEquals(propertyType, property.getType());
+        Value[] values = property.getValues();
+        for (int i = 0; i < expectedValues.length; i++) {
+            if (propertyType == PropertyType.DATE) {
+                assertEquals(((Calendar) expectedValues[i]).getTime().getTime(), ((Calendar) extractor.apply(values[i])).getTime().getTime());
+            } else {
+                assertEquals(expectedValues[i], extractor.apply(values[i]));
+            }
+        }
+    }
+
+    interface ExtractValue {
+        Object apply(Value value) throws RepositoryException;
+    }
+}
