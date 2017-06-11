@@ -55,7 +55,7 @@ public class NodeTypeUtils {
         NodeTypeManager nodeTypeManager = session.getWorkspace().getNodeTypeManager();
         String uri = getOrRegisterNamespace(session, nodeType);
         NameFactory nameFactory = NameFactoryImpl.getInstance();
-        Name name = nameFactory.create(uri, nodeType.substring(nodeType.indexOf(":") + 1));
+        Name name = nameFactory.create(uri, nodeType.substring(nodeType.indexOf(':') + 1));
         ValueFactory valueFactory = session.getValueFactory();
         Name[] supertypes;
         if (!isMixin) {
@@ -70,7 +70,7 @@ public class NodeTypeUtils {
     }
 
     private static String getOrRegisterNamespace(Session session, String nodeName) throws RepositoryException {
-        String prefix = nodeName.substring(0, nodeName.indexOf(":"));
+        String prefix = nodeName.substring(0, nodeName.indexOf(':'));
         NamespaceRegistry namespaceRegistry = session.getWorkspace().getNamespaceRegistry();
         String uri;
         try {

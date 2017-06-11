@@ -89,7 +89,7 @@ public class JsonUtils {
     private static void addNodeBean(List<Object> items, Map.Entry<String, Object> entry) {
         Object value = entry.getValue();
         if (value instanceof Collection) {
-            for (Object o : ((Collection) value)) {
+            for (Object o : (Collection) value) {
                 items.add(mapToNode((Map<String, Object>) o, entry.getKey()));
             }
         } else {

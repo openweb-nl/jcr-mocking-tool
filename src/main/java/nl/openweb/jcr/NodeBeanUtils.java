@@ -27,15 +27,20 @@ public class NodeBeanUtils {
 
     private static final Set<String> NATIVE_TYPES;
 
-    public static final String VALUE = "value";
-    public static final String PRIMITIVE_TYPE = "primitiveType";
+    private static final String VALUE = "value";
+    private static final String PRIMITIVE_TYPE = "primitiveType";
+
+    private static final String LONG = "Long";
+    private static final String DOUBLE = "Double";
+    private static final String BOOLEAN = "Boolean";
+    private static final String STRING = "String";
 
     static {
         HashSet<String> nonNativeTypes = new HashSet<>();
-        nonNativeTypes.add("Long");
-        nonNativeTypes.add("Double");
-        nonNativeTypes.add("Boolean");
-        nonNativeTypes.add("String");
+        nonNativeTypes.add(LONG);
+        nonNativeTypes.add(DOUBLE);
+        nonNativeTypes.add(BOOLEAN);
+        nonNativeTypes.add(STRING);
         NATIVE_TYPES = Collections.unmodifiableSet(nonNativeTypes);
     }
 
@@ -92,13 +97,13 @@ public class NodeBeanUtils {
     }
 
     public static String getValueType(Object value) {
-        String result = "String";
+        String result = STRING;
         if (value instanceof Long || value instanceof Integer) {
-            result = "Long";
+            result = LONG;
         } else if (value instanceof Double || value instanceof Float) {
-            result = "Double";
+            result = DOUBLE;
         } else if (value instanceof Boolean) {
-            result = "Boolean";
+            result = BOOLEAN;
         } else if (isPrimitiveTypeMap(value)) {
             result = (String) ((Map) value).get(PRIMITIVE_TYPE);
         }
@@ -139,7 +144,7 @@ public class NodeBeanUtils {
 
 
     private static Object convertValue(String value, String type) {
-        Object result = null;
+        Object result;
         if (!NATIVE_TYPES.contains(type)) {
             Map<String, Object> map = new HashMap<>();
             map.put(PRIMITIVE_TYPE, type);
@@ -156,13 +161,13 @@ public class NodeBeanUtils {
     private static Class<?> getType(String type) {
         Class<?> result;
         switch (type) {
-            case "Long":
+            case LONG:
                 result = Long.class;
                 break;
-            case "Double":
+            case DOUBLE:
                 result = Double.class;
                 break;
-            case "Boolean":
+            case BOOLEAN:
                 result = Boolean.class;
                 break;
             default:

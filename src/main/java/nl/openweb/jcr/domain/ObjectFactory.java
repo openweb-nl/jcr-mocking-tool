@@ -39,14 +39,7 @@ import javax.xml.namespace.QName;
 @XmlRegistry
 public class ObjectFactory {
 
-    private final static QName _Value_QNAME = new QName("http://www.jcp.org/jcr/sv/1.0", "value");
-
-    /**
-     * Create a new ObjectFactory that can be used to create new instances of schema derived classes for package: nl.openweb.hippo.domain
-     * 
-     */
-    public ObjectFactory() {
-    }
+    private static final QName _Value_QNAME = new QName("http://www.jcp.org/jcr/sv/1.0", "value");
 
     /**
      * Create an instance of {@link NodeBean }

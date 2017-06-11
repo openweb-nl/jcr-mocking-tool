@@ -24,6 +24,8 @@ import java.lang.reflect.Method;
 import java.util.*;
 
 import org.apache.commons.beanutils.ConvertUtilsBean;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import nl.openweb.jcr.json.JsonUtils;
 import nl.openweb.jcr.utils.NodeTypeUtils;
@@ -44,6 +46,22 @@ public class Importer {
     private final boolean addUnknownTypes;
     private final SupplierWithException<Node> rootNodeSupplier;
 
+    private static final Logger LOG = LoggerFactory.getLogger(Importer.class);
+
+    private Importer(Builder builder) {
+        this.addMixins = builder.addMixins;
+        this.rootNodeSupplier = builder.rootNodeSupplier;
+        this.addUuid = builder.addUuid;
+        this.setProtectedProperties = builder.setProtectedProperties;
+        this.saveSession = builder.saveSession;
+        this.addUnknownTypes = builder.addUnknownTypes;
+        HashSet<String> set = new HashSet<>();
+        set.add(JCR_PRIMARY_TYPE);
+        set.add(JCR_MIXIN_TYPES);
+        set.add(JCR_UUID);
+        this.protectedProperties = Collections.unmodifiableSet(set);
+    }
+
     public Node createNodesFromJson(String json) throws IOException, RepositoryException {
         return createNodeFromNodeBean(JsonUtils.parseJsonMap(json));
     }
@@ -52,7 +70,7 @@ public class Importer {
         return createNodeFromNodeBean(JsonUtils.parseJsonMap(inputStream));
     }
 
-    private Node createNodeFromNodeBean(Map<String, Object> map) throws JcrImporterException {
+    private Node createNodeFromNodeBean(Map<String, Object> map) {
         try {
             Node node = rootNodeSupplier.get();
             updateNode(node, map);
@@ -100,42 +118,50 @@ public class Importer {
     private void addProperty(Node node, ValueFactory valueFactory, Map.Entry<String, Object> entry) throws RepositoryException {
         String name = entry.getKey();
         if (entry.getValue() instanceof Collection) {
-            Collection<Object> values = (Collection) entry.getValue();
-            List<Value> jcrValues = new ArrayList<>();
-            for (Iterator<Object> iterator = values.iterator(); iterator.hasNext(); ) {
-                Value jcrValue = toJcrValue(valueFactory, iterator.next());
-                if (JCR_MIXIN_TYPES.equals(name) && addMixins) {
-                    String mixinName = jcrValue.getString();
-                    if (addUnknownTypes) {
-                        NodeTypeUtils.createMixin(node.getSession(), mixinName);
-                    }
-                    node.addMixin(mixinName);
-                }
-                jcrValues.add(jcrValue);
-            }
-            if (!protectedProperties.contains(name) || setProtectedProperties) {
-                node.setProperty(name, jcrValues.toArray(new Value[jcrValues.size()]));
-            }
+            addMultivalueProperty(node, valueFactory, entry, name);
         } else {
-            Value jcrValue = toJcrValue(valueFactory, entry.getValue());
-            if ("jcr:uuid".equals(name) && addUuid) {
-                setUuid(node, jcrValue.getString());
+            addSingleValueProperty(node, valueFactory, entry, name);
+        }
+
+
+    }
+
+    private void addSingleValueProperty(Node node, ValueFactory valueFactory, Map.Entry<String, Object> entry, String name) throws RepositoryException {
+        Value jcrValue = toJcrValue(valueFactory, entry.getValue());
+        if ("jcr:uuid".equals(name) && addUuid) {
+            setUuid(node, jcrValue.getString());
+        }
+        if (JCR_MIXIN_TYPES.equals(name) && addMixins) {
+            String mixinName = jcrValue.getString();
+            if (addUnknownTypes) {
+                NodeTypeUtils.createMixin(node.getSession(), mixinName);
             }
+            node.addMixin(mixinName);
+            if (setProtectedProperties) {
+                node.setProperty(name, new Value[]{jcrValue});
+            }
+        } else if (!protectedProperties.contains(name) || setProtectedProperties) {
+            node.setProperty(name, jcrValue);
+        }
+    }
+
+    private void addMultivalueProperty(Node node, ValueFactory valueFactory, Map.Entry<String, Object> entry, String name) throws RepositoryException {
+        Collection<Object> values = (Collection) entry.getValue();
+        List<Value> jcrValues = new ArrayList<>();
+        for (Iterator<Object> iterator = values.iterator(); iterator.hasNext(); ) {
+            Value jcrValue = toJcrValue(valueFactory, iterator.next());
             if (JCR_MIXIN_TYPES.equals(name) && addMixins) {
                 String mixinName = jcrValue.getString();
                 if (addUnknownTypes) {
                     NodeTypeUtils.createMixin(node.getSession(), mixinName);
                 }
                 node.addMixin(mixinName);
-                if (setProtectedProperties) {
-                    node.setProperty(name, new Value[]{jcrValue});
-                }
-            } else if (!protectedProperties.contains(name) || setProtectedProperties) {
-                node.setProperty(name, jcrValue);
             }
+            jcrValues.add(jcrValue);
         }
-
-
+        if (!protectedProperties.contains(name) || setProtectedProperties) {
+            node.setProperty(name, jcrValues.toArray(new Value[jcrValues.size()]));
+        }
     }
 
     private void setUuid(Node node, String uuid) {
@@ -143,7 +169,7 @@ public class Importer {
             Method setter = node.getClass().getMethod("setIdentifier", String.class);
             setter.invoke(node, uuid);
         } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
-            // ignore
+            LOG.debug("While trying to set the uuid the following exception was thrown: " + e.getMessage(), e);
         }
     }
 
@@ -168,20 +194,6 @@ public class Importer {
                 break;
         }
         return result;
-    }
-
-    private Importer(Builder builder) {
-        this.addMixins = builder.addMixins;
-        this.rootNodeSupplier = builder.rootNodeSupplier;
-        this.addUuid = builder.addUuid;
-        this.setProtectedProperties = builder.setProtectedProperties;
-        this.saveSession = builder.saveSession;
-        this.addUnknownTypes = builder.addUnknownTypes;
-        HashSet<String> set = new HashSet<>();
-        set.add(JCR_PRIMARY_TYPE);
-        set.add(JCR_MIXIN_TYPES);
-        set.add(JCR_UUID);
-        this.protectedProperties = Collections.unmodifiableSet(set);
     }
 
     public static class Builder {
