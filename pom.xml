@@ -38,8 +38,8 @@
   </properties>
 
   <scm>
-    <connection>scm:git:ssh://git@github.com:openweb-nl/jcr-mocking-tool.git</connection>
-    <developerConnection>scm:git:ssh://git@github.com:openweb-nl/jcr-mocking-tool.git</developerConnection>
+    <connection>scm:git:git@github.com:openweb-nl/jcr-mocking-tool.git</connection>
+    <developerConnection>scm:git:git@github.com:openweb-nl/jcr-mocking-tool.git</developerConnection>
     <url>https://github.com/openweb-nl/jcr-mocking-tool</url>
     <tag>HEAD</tag>
   </scm>
@@ -57,7 +57,7 @@
 
   <repositories>
     <repository>
-      <id>openweb-maven-releases</id>
+      <id>openweb-maven-public</id>
       <url>https://maven.open-web.nl/content/repositories/public/</url>
     </repository>
   </repositories>
@@ -107,7 +107,7 @@
     <dependency>
       <groupId>nl.openweb.jcr</groupId>
       <artifactId>in-memory-jcr</artifactId>
-      <version>0.1.0-SNAPSHOT</version>
+      <version>1.0.0</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -157,23 +157,13 @@
           <artifactId>jacoco-maven-plugin</artifactId>
           <version>0.7.9</version>
         </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-release-plugin</artifactId>
+          <version>2.5.3</version>
+        </plugin>
       </plugins>
     </pluginManagement>
-    <plugins>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-source-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>attach-sources</id>
-            <phase>verify</phase>
-            <goals>
-              <goal>jar-no-fork</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
-    </plugins>
   </build>
 
   <reporting>
