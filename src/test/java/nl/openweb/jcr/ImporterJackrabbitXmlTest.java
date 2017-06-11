@@ -22,7 +22,7 @@ import javax.jcr.SimpleCredentials;
 import java.io.IOException;
 import java.net.URISyntaxException;
 
-public class ImporterJackrabbitTest extends AbstractImporterJsonTest {
+public class ImporterJackrabbitXmlTest extends AbstractImporterXmlTest {
     private InMemoryJcrRepository inMemoryJcrRepository;
 
     @Override

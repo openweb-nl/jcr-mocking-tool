@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<sv:node sv:name="jcr:root" xmlns:rep="internal" xmlns:sv="http://www.jcp.org/jcr/sv/1.0"
+         xmlns:mix="http://www.jcp.org/jcr/mix/1.0" xmlns:jcr="http://www.jcp.org/jcr/1.0"
+         xmlns:jmt="https://www.openweb.nl/jmt/nt/1.0" xmlns:nt="http://www.jcp.org/jcr/nt/1.0">
+  <sv:property sv:name="jcr:primaryType" sv:type="Name">
+    <sv:value>rep:root</sv:value>
+  </sv:property>
+  <sv:property sv:name="rootNodeProperty" sv:type="String">
+    <sv:value>rootNodePropertyValue</sv:value>
+  </sv:property>
+  <sv:node sv:name="subnode">
+    <sv:property sv:name="jcr:primaryType" sv:type="Name">
+      <sv:value>jmt:folder</sv:value>
+    </sv:property>
+    <sv:property sv:name="jcr:mixinTypes" sv:type="Name" sv:multiple="true">
+      <sv:value>mix:referenceable</sv:value>
+    </sv:property>
+    <sv:property sv:name="jcr:uuid" sv:type="String">
+      <sv:value>bd5f5985-d7c5-4cb2-9bd0-f927d9dd5a4c</sv:value>
+    </sv:property>
+    <sv:property sv:name="parentNodeProperty" sv:type="String">
+      <sv:value>parentNodePropertyValue</sv:value>
+    </sv:property>
+    <sv:node sv:name="subsubnode">
+      <sv:property sv:name="jcr:primaryType" sv:type="Name">
+        <sv:value>jmt:item</sv:value>
+      </sv:property>
+      <sv:property sv:name="jcr:mixinTypes" sv:type="Name" sv:multiple="true">
+        <sv:value>mix:test</sv:value>
+        <sv:value>mix:referenceable</sv:value>
+      </sv:property>
+      <sv:property sv:name="jcr:uuid" sv:type="String">
+        <sv:value>ca10685b-88f9-4251-9124-141e76164f7a</sv:value>
+      </sv:property>
+      <sv:property sv:name="multivalueBoolean" sv:type="Boolean" sv:multiple="true">
+        <sv:value>true</sv:value>
+        <sv:value>false</sv:value>
+        <sv:value>true</sv:value>
+      </sv:property>
+      <sv:property sv:name="multivalueDate" sv:type="Date" sv:multiple="true">
+        <sv:value>2016-11-03T10:06:35.101+01:00</sv:value>
+        <sv:value>2017-05-20T08:28:35.101+01:00</sv:value>
+      </sv:property>
+      <sv:property sv:name="multivalueDouble" sv:type="Double" sv:multiple="true">
+        <sv:value>2.0</sv:value>
+        <sv:value>6.0</sv:value>
+        <sv:value>232.0</sv:value>
+      </sv:property>
+      <sv:property sv:name="multivalueLong" sv:type="Long" sv:multiple="true">
+        <sv:value>2</sv:value>
+        <sv:value>6</sv:value>
+        <sv:value>232</sv:value>
+      </sv:property>
+      <sv:property sv:name="multivalueString" sv:type="String" sv:multiple="true">
+        <sv:value>stringValue01</sv:value>
+        <sv:value>stringValue02</sv:value>
+        <sv:value>stringValue03</sv:value>
+      </sv:property>
+      <sv:property sv:name="singleValueBoolean" sv:type="Boolean">
+        <sv:value>true</sv:value>
+      </sv:property>
+      <sv:property sv:name="singleValueDouble" sv:type="Double">
+        <sv:value>20.0</sv:value>
+      </sv:property>
+      <sv:property sv:name="singleValueLong" sv:type="Long">
+        <sv:value>20</sv:value>
+      </sv:property>
+      <sv:property sv:name="singleValueString" sv:type="String">
+        <sv:value>stringValue</sv:value>
+      </sv:property>
+      <sv:property sv:name="singlevalueDate" sv:type="Date">
+        <sv:value>2016-11-03T10:06:35.101+01:00</sv:value>
+      </sv:property>
+    </sv:node>
+    <sv:node sv:name="sameNameSiblings">
+      <sv:property sv:name="jcr:primaryType" sv:type="Name">
+        <sv:value>jmt:item</sv:value>
+      </sv:property>
+      <sv:property sv:name="singleValueString" sv:type="String">
+        <sv:value>stringValue1</sv:value>
+      </sv:property>
+    </sv:node>
+    <sv:node sv:name="sameNameSiblings">
+      <sv:property sv:name="jcr:primaryType" sv:type="Name">
+        <sv:value>jmt:item</sv:value>
+      </sv:property>
+      <sv:property sv:name="singleValueString" sv:type="String">
+        <sv:value>stringValue2</sv:value>
+      </sv:property>
+    </sv:node>
+  </sv:node>
+</sv:node>

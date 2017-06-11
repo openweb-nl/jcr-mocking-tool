@@ -33,7 +33,6 @@
       "jcr:primaryType" : "jmt:item",
       "singleValueString" : "stringValue1"
     }, {
-      "jcr:primaryType" : "jmt:item",
       "singleValueString" : "stringValue2"
     } ]
   }

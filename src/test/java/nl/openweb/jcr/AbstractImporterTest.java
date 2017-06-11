@@ -17,7 +17,6 @@
 package nl.openweb.jcr;
 
 import javax.jcr.*;
-import java.io.InputStream;
 import java.util.Calendar;
 import java.util.Date;
 
@@ -36,12 +35,7 @@ public abstract class AbstractImporterTest {
     protected Node rootNode;
 
     @Before
-    public void init() throws Exception {
-        try (InputStream inputStream = getClass().getClassLoader().getResourceAsStream("nodes.json")) {
-            Importer importer = createImporter();
-            rootNode = importer.createNodesFromJson(inputStream);
-        }
-    }
+    public abstract void init() throws Exception;
 
     @After
     public void teardown() throws Exception {
@@ -98,6 +92,13 @@ public abstract class AbstractImporterTest {
         assertNotNull(node.getMixinNodeTypes());
 
         assertTrue(rootNode.getNode("subnode/subsubnode").isNodeType("mix:referenceable"));
+    }
+
+    @Test
+    public void nodeTypeTest() throws RepositoryException {
+        Assert.assertTrue(rootNode.getNode("subnode").isNodeType("jmt:folder"));
+        Assert.assertTrue(rootNode.getNode("subnode/subsubnode").isNodeType("jmt:item"));
+
     }
 
     protected Calendar getCalendar(long date) {

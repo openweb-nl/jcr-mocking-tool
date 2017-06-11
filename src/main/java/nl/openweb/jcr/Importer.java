@@ -17,6 +17,10 @@
 package nl.openweb.jcr;
 
 import javax.jcr.*;
+import javax.xml.bind.JAXBContext;
+import javax.xml.bind.JAXBException;
+import javax.xml.bind.Unmarshaller;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.InvocationTargetException;
@@ -27,6 +31,8 @@ import org.apache.commons.beanutils.ConvertUtilsBean;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import nl.openweb.jcr.domain.NodeBean;
+import nl.openweb.jcr.domain.PropertyBean;
 import nl.openweb.jcr.json.JsonUtils;
 import nl.openweb.jcr.utils.NodeTypeUtils;
 
@@ -45,21 +51,27 @@ public class Importer {
     private final boolean addUuid;
     private final boolean addUnknownTypes;
     private final SupplierWithException<Node> rootNodeSupplier;
+    private JAXBContext jaxbContext;
 
     private static final Logger LOG = LoggerFactory.getLogger(Importer.class);
 
     private Importer(Builder builder) {
-        this.addMixins = builder.addMixins;
-        this.rootNodeSupplier = builder.rootNodeSupplier;
-        this.addUuid = builder.addUuid;
-        this.setProtectedProperties = builder.setProtectedProperties;
-        this.saveSession = builder.saveSession;
-        this.addUnknownTypes = builder.addUnknownTypes;
-        HashSet<String> set = new HashSet<>();
-        set.add(JCR_PRIMARY_TYPE);
-        set.add(JCR_MIXIN_TYPES);
-        set.add(JCR_UUID);
-        this.protectedProperties = Collections.unmodifiableSet(set);
+        try {
+            this.addMixins = builder.addMixins;
+            this.rootNodeSupplier = builder.rootNodeSupplier;
+            this.addUuid = builder.addUuid;
+            this.setProtectedProperties = builder.setProtectedProperties;
+            this.saveSession = builder.saveSession;
+            this.addUnknownTypes = builder.addUnknownTypes;
+            HashSet<String> set = new HashSet<>();
+            set.add(JCR_PRIMARY_TYPE);
+            set.add(JCR_MIXIN_TYPES);
+            set.add(JCR_UUID);
+            this.protectedProperties = Collections.unmodifiableSet(set);
+            this.jaxbContext = JAXBContext.newInstance(NodeBean.class, PropertyBean.class);
+        } catch (JAXBException e) {
+            throw new JcrImporterException(e.getMessage(), e);
+        }
     }
 
     public Node createNodesFromJson(String json) throws IOException, RepositoryException {
@@ -68,6 +80,20 @@ public class Importer {
 
     public Node createNodesFromJson(InputStream inputStream) throws IOException, RepositoryException {
         return createNodeFromNodeBean(JsonUtils.parseJsonMap(inputStream));
+    }
+
+    public Node createNodesFromXml(String xml) throws IOException, RepositoryException, JAXBException {
+        return this.createNodesFromXml(new ByteArrayInputStream(xml.getBytes()));
+    }
+
+    public Node createNodesFromXml(InputStream inputStream) throws IOException, RepositoryException, JAXBException {
+        Unmarshaller unmarshaller = jaxbContext.createUnmarshaller();
+        Object unmarshaled = unmarshaller.unmarshal(inputStream);
+        if (unmarshaled instanceof NodeBean) {
+            return createNodeFromNodeBean(NodeBeanUtils.nodeBeanToMap((NodeBean) unmarshaled));
+        } else {
+            throw new JcrImporterException("The given XML file is not of the right format");
+        }
     }
 
     private Node createNodeFromNodeBean(Map<String, Object> map) {
@@ -99,7 +125,7 @@ public class Importer {
         if (obj instanceof Map) {
             Map map = (Map) obj;
             if (map.containsKey(JCR_PRIMARY_TYPE)) {
-                String nodeTypeName = map.get(JCR_PRIMARY_TYPE).toString();
+                String nodeTypeName = getPrimaryType(map);
                 if (addUnknownTypes) {
                     NodeTypeUtils.createNodeType(node.getSession(), nodeTypeName);
                 }
@@ -113,6 +139,17 @@ public class Importer {
                 addSubnode(node, name, item);
             }
         }
+    }
+
+    private String getPrimaryType(Map map) {
+        String result;
+        Object value = map.get(JCR_PRIMARY_TYPE);
+        if (value instanceof Map && ((Map) value).containsKey("value")) {
+            result = ((Map) value).get("value").toString();
+        } else {
+            result = value.toString();
+        }
+        return result;
     }
 
     private void addProperty(Node node, ValueFactory valueFactory, Map.Entry<String, Object> entry) throws RepositoryException {

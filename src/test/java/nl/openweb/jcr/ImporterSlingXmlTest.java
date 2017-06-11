@@ -21,7 +21,7 @@ import java.io.IOException;
 
 import org.apache.sling.testing.mock.jcr.MockJcr;
 
-public class ImporterSlingTest extends AbstractImporterJsonTest {
+public class ImporterSlingXmlTest extends AbstractImporterXmlTest {
 
 
     @Override
@@ -33,7 +33,6 @@ public class ImporterSlingTest extends AbstractImporterJsonTest {
                 .addMixins(false)
                 .addUuid(true)
                 .setProtectedProperties(true)
-                .saveSession(false)
                 .build();
     }
 

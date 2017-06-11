@@ -20,10 +20,21 @@ import javax.jcr.RepositoryException;
 import javax.jcr.Session;
 import javax.jcr.SimpleCredentials;
 import java.io.IOException;
+import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.stream.Collectors;
 
-public class ImporterJackrabbitTest extends AbstractImporterJsonTest {
+public class ImporterJackrabbitXmlStringTest extends AbstractImporterTest {
     private InMemoryJcrRepository inMemoryJcrRepository;
+
+    @Override
+    public void init() throws Exception {
+        String xml = loadXml("nodes.xml");
+        Importer importer = createImporter();
+        rootNode = importer.createNodesFromXml(xml);
+    }
 
     @Override
     protected Importer createImporter() throws IOException, RepositoryException, URISyntaxException {
@@ -42,5 +53,10 @@ public class ImporterJackrabbitTest extends AbstractImporterJsonTest {
     @Override
     protected void shutdown() throws IOException {
         inMemoryJcrRepository.shutdown();
+    }
+
+    private String loadXml(String file) throws URISyntaxException, IOException {
+        URI uri = getClass().getClassLoader().getResource(file).toURI();
+        return Files.readAllLines(Paths.get(uri)).stream().collect(Collectors.joining("\n"));
     }
 }
