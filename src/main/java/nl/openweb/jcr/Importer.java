@@ -107,10 +107,9 @@ public class Importer {
     }
 
     private void updateNode(Node node, Map<String, Object> map) throws RepositoryException {
-        ValueFactory valueFactory = node.getSession().getValueFactory();
         for (Map.Entry<String, Object> entry : map.entrySet()) {
             if (NodeBeanUtils.isProperty(entry)) {
-                addProperty(node, valueFactory, entry);
+                addProperty(node, entry);
             } else {
                 addSubnode(node, entry.getKey(), entry.getValue());
             }
@@ -152,19 +151,22 @@ public class Importer {
         return result;
     }
 
-    private void addProperty(Node node, ValueFactory valueFactory, Map.Entry<String, Object> entry) throws RepositoryException {
+    private void addProperty(Node node, Map.Entry<String, Object> entry) throws RepositoryException {
         String name = entry.getKey();
+        if (addUnknownTypes) {
+            NodeTypeUtils.getOrRegisterNamespace(node.getSession(), name);
+        }
         if (entry.getValue() instanceof Collection) {
-            addMultivalueProperty(node, valueFactory, entry, name);
+            addMultivalueProperty(node, entry, name);
         } else {
-            addSingleValueProperty(node, valueFactory, entry, name);
+            addSingleValueProperty(node, entry, name);
         }
 
 
     }
 
-    private void addSingleValueProperty(Node node, ValueFactory valueFactory, Map.Entry<String, Object> entry, String name) throws RepositoryException {
-        Value jcrValue = toJcrValue(valueFactory, entry.getValue());
+    private void addSingleValueProperty(Node node, Map.Entry<String, Object> entry, String name) throws RepositoryException {
+        Value jcrValue = toJcrValue(node.getSession(), entry.getValue(), name);
         if ("jcr:uuid".equals(name) && addUuid) {
             setUuid(node, jcrValue.getString());
         }
@@ -182,11 +184,11 @@ public class Importer {
         }
     }
 
-    private void addMultivalueProperty(Node node, ValueFactory valueFactory, Map.Entry<String, Object> entry, String name) throws RepositoryException {
+    private void addMultivalueProperty(Node node, Map.Entry<String, Object> entry, String name) throws RepositoryException {
         Collection<Object> values = (Collection) entry.getValue();
         List<Value> jcrValues = new ArrayList<>();
         for (Iterator<Object> iterator = values.iterator(); iterator.hasNext(); ) {
-            Value jcrValue = toJcrValue(valueFactory, iterator.next());
+            Value jcrValue = toJcrValue(node.getSession(), iterator.next(), name);
             if (JCR_MIXIN_TYPES.equals(name) && addMixins) {
                 String mixinName = jcrValue.getString();
                 if (addUnknownTypes) {
@@ -210,12 +212,20 @@ public class Importer {
         }
     }
 
-    private Value toJcrValue(ValueFactory valueFactory, Object value) throws ValueFormatException {
+    private Value toJcrValue(Session session, Object value, String propertyName) throws RepositoryException {
         Value result;
+        ValueFactory valueFactory = session.getValueFactory();
         String valueType = NodeBeanUtils.getValueType(value);
         ConvertUtilsBean convertUtilsBean = new ConvertUtilsBean();
         int type = PropertyType.valueFromName(valueType);
         String valueAsString = NodeBeanUtils.getValueAsString(value);
+        if (addUnknownTypes && type == PropertyType.NAME) {
+            if (JCR_MIXIN_TYPES.equals(propertyName)) {
+                NodeTypeUtils.createMixin(session, valueAsString);
+            } else {
+                NodeTypeUtils.createNodeType(session, valueAsString);
+            }
+        }
         switch (type) {
             case PropertyType.BOOLEAN:
                 result = valueFactory.createValue((Boolean) convertUtilsBean.convert(valueAsString, Boolean.class));
@@ -280,7 +290,7 @@ public class Importer {
     }
 
     @FunctionalInterface
-    interface SupplierWithException<T> {
+    public interface SupplierWithException<T> {
         T get() throws Exception;
     }
 

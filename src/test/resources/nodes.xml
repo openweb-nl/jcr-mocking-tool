@@ -3,7 +3,7 @@
          xmlns:mix="http://www.jcp.org/jcr/mix/1.0" xmlns:jcr="http://www.jcp.org/jcr/1.0"
          xmlns:jmt="https://www.openweb.nl/jmt/nt/1.0" xmlns:nt="http://www.jcp.org/jcr/nt/1.0">
   <sv:property sv:name="jcr:primaryType" sv:type="Name">
-    <sv:value>rep:root</sv:value>
+    <sv:value>jmt:folder</sv:value>
   </sv:property>
   <sv:property sv:name="rootNodeProperty" sv:type="String">
     <sv:value>rootNodePropertyValue</sv:value>

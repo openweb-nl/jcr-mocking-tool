@@ -51,6 +51,22 @@ public class NodeTypeUtils {
         }
     }
 
+    public static String getOrRegisterNamespace(Session session, String name) throws RepositoryException {
+        String uri = null;
+        if (name.indexOf(':') > -1) {
+            String prefix = name.substring(0, name.indexOf(':'));
+            NamespaceRegistry namespaceRegistry = session.getWorkspace().getNamespaceRegistry();
+            try {
+                uri = namespaceRegistry.getURI(prefix);
+            } catch (RepositoryException e) {
+                uri = "https://www.openweb.nl/" + prefix + "/nt/1.0";
+                namespaceRegistry.registerNamespace(prefix, uri);
+            }
+        }
+        return uri;
+    }
+
+
     private static void registerNodeOrMixin(Session session, String nodeType, boolean isMixin) throws RepositoryException {
         NodeTypeManager nodeTypeManager = session.getWorkspace().getNodeTypeManager();
         String uri = getOrRegisterNamespace(session, nodeType);
@@ -69,16 +85,5 @@ public class NodeTypeUtils {
         nodeTypeManager.registerNodeType(nodeTypeDefinition, false);
     }
 
-    private static String getOrRegisterNamespace(Session session, String nodeName) throws RepositoryException {
-        String prefix = nodeName.substring(0, nodeName.indexOf(':'));
-        NamespaceRegistry namespaceRegistry = session.getWorkspace().getNamespaceRegistry();
-        String uri;
-        try {
-            uri = namespaceRegistry.getURI(prefix);
-        } catch (RepositoryException e) {
-            uri = "https://www.openweb.nl/" + prefix + "/nt/1.0";
-            namespaceRegistry.registerNamespace(prefix, uri);
-        }
-        return uri;
-    }
+
 }

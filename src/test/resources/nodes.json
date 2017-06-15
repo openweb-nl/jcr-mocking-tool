@@ -1,5 +1,8 @@
 {
-  "jcr:primaryType" : "nt:unstructured",
+  "jcr:primaryType" : {
+    "primitiveType" : "Name",
+    "value" : "jmt:folder"
+  },
   "jcr:uuid" : "cafebabe-cafe-babe-cafe-babecafebabe",
   "rootNodeProperty" : "rootNodePropertyValue",
   "subnode" : {
