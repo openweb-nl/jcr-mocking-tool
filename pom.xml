@@ -20,7 +20,7 @@
 
   <groupId>nl.openweb.jcr</groupId>
   <artifactId>jcr-mocking-tool</artifactId>
-  <version>1.1.0-SNAPSHOT</version>
+  <version>1.1.0</version>
 
   <licenses>
     <license>
@@ -39,7 +39,7 @@
     <connection>scm:git:git@github.com:openweb-nl/jcr-mocking-tool.git</connection>
     <developerConnection>scm:git:git@github.com:openweb-nl/jcr-mocking-tool.git</developerConnection>
     <url>https://github.com/openweb-nl/jcr-mocking-tool</url>
-    <tag>HEAD</tag>
+    <tag>jcr-mocking-tool-1.1.0</tag>
   </scm>
 
   <distributionManagement>
