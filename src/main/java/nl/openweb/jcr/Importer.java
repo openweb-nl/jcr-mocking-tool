@@ -156,14 +156,16 @@ public class Importer {
         if (addUnknownTypes) {
             NodeTypeUtils.getOrRegisterNamespace(node.getSession(), name);
         }
-        if (entry.getValue() instanceof Collection) {
+        Object value = entry.getValue();
+        if (value instanceof Collection) {
             addMultivalueProperty(node, entry, name);
-        } else {
+        } else if (NodeBeanUtils.isValueNotNull(value)) {
             addSingleValueProperty(node, entry, name);
         }
 
 
     }
+
 
     private void addSingleValueProperty(Node node, Map.Entry<String, Object> entry, String name) throws RepositoryException {
         Value jcrValue = toJcrValue(node.getSession(), entry.getValue(), name);
@@ -188,18 +190,25 @@ public class Importer {
         Collection<Object> values = (Collection) entry.getValue();
         List<Value> jcrValues = new ArrayList<>();
         for (Iterator<Object> iterator = values.iterator(); iterator.hasNext(); ) {
-            Value jcrValue = toJcrValue(node.getSession(), iterator.next(), name);
-            if (JCR_MIXIN_TYPES.equals(name) && addMixins) {
-                String mixinName = jcrValue.getString();
-                if (addUnknownTypes) {
-                    NodeTypeUtils.createMixin(node.getSession(), mixinName);
-                }
-                node.addMixin(mixinName);
+            Object value = iterator.next();
+            if (NodeBeanUtils.isValueNotNull(value)) {
+                Value jcrValue = toJcrValue(node.getSession(), value, name);
+                addMixinIfRequired(node, name, jcrValue);
+                jcrValues.add(jcrValue);
             }
-            jcrValues.add(jcrValue);
         }
         if (!protectedProperties.contains(name) || setProtectedProperties) {
             node.setProperty(name, jcrValues.toArray(new Value[jcrValues.size()]));
+        }
+    }
+
+    private void addMixinIfRequired(Node node, String name, Value jcrValue) throws RepositoryException {
+        if (JCR_MIXIN_TYPES.equals(name) && addMixins) {
+            String mixinName = jcrValue.getString();
+            if (addUnknownTypes) {
+                NodeTypeUtils.createMixin(node.getSession(), mixinName);
+            }
+            node.addMixin(mixinName);
         }
     }
 

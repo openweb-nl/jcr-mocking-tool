@@ -85,11 +85,19 @@ public class NodeBeanUtils {
         boolean result;
         Object value = entry.getValue();
         if (value instanceof Collection) {
-            result = ((Collection<Object>) value).stream().findFirst().map(NodeBeanUtils::isItemProperty).orElse(true);
+            result = ((Collection<Object>) value).stream()
+                    .filter(Objects::nonNull)
+                    .findFirst()
+                    .map(NodeBeanUtils::isItemProperty)
+                    .orElse(true);
         } else {
             result = isItemProperty(value);
         }
         return result;
+    }
+
+    public static boolean isValueNotNull(Object value) {
+        return value != null && (!(value instanceof Map) || ((Map) value).get("value") != null);
     }
 
     private static boolean isItemProperty(Object value) {
@@ -111,10 +119,10 @@ public class NodeBeanUtils {
     }
 
     public static String getValueAsString(Object value) {
-        String result;
+        String result = null;
         if (NodeBeanUtils.isPrimitiveTypeMap(value)) {
             result = (String) ((Map) value).get(VALUE);
-        } else {
+        } else if (value != null) {
             result = value.toString();
         }
         return result;
