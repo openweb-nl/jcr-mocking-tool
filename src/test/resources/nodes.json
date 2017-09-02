@@ -9,6 +9,7 @@
     "jcr:primaryType" : "jmt:folder",
     "jcr:mixinTypes" : "mix:referenceable",
     "parentNodeProperty" : "parentNodePropertyValue",
+    "jcr:uuid" : "bd5f5985-d7c5-4cb2-9bd0-f927d9dd5a4c",
     "subsubnode" : {
       "jcr:mixinTypes" : [ "mix:referenceable", "mix:test" ],
       "jcr:primaryType" : "jmt:item",

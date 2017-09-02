@@ -78,6 +78,7 @@ public abstract class AbstractImporterTest {
     @Test
     public void identifierTest() throws RepositoryException {
         assertEquals("cafebabe-cafe-babe-cafe-babecafebabe", rootNode.getIdentifier());
+        assertEquals("bd5f5985-d7c5-4cb2-9bd0-f927d9dd5a4c", rootNode.getNode("subnode").getIdentifier());
     }
 
     @Test

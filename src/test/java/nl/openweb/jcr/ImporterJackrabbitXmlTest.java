@@ -33,7 +33,7 @@ public class ImporterJackrabbitXmlTest extends AbstractImporterXmlTest {
             return session.getRootNode();
         })
                 .addMixins(true)
-                .addUuid(false)
+                .addUuid(true)
                 .addUnknownTypes(true)
                 .saveSession(true)
                 .build();

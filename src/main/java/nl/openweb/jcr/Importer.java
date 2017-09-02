@@ -23,18 +23,16 @@ import javax.xml.bind.Unmarshaller;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.*;
 
 import org.apache.commons.beanutils.ConvertUtilsBean;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import nl.openweb.jcr.domain.NodeBean;
 import nl.openweb.jcr.domain.PropertyBean;
 import nl.openweb.jcr.json.JsonUtils;
 import nl.openweb.jcr.utils.NodeTypeUtils;
+import nl.openweb.jcr.utils.ReflectionUtils;
 
 /**
  * Created by Ebrahim on 5/20/2017.
@@ -52,8 +50,6 @@ public class Importer {
     private final boolean addUnknownTypes;
     private final SupplierWithException<Node> rootNodeSupplier;
     private JAXBContext jaxbContext;
-
-    private static final Logger LOG = LoggerFactory.getLogger(Importer.class);
 
     private Importer(Builder builder) {
         try {
@@ -124,13 +120,9 @@ public class Importer {
         if (obj instanceof Map) {
             Map map = (Map) obj;
             if (map.containsKey(JCR_PRIMARY_TYPE)) {
-                String nodeTypeName = getPrimaryType(map);
-                if (addUnknownTypes) {
-                    NodeTypeUtils.createNodeType(node.getSession(), nodeTypeName);
-                }
-                subNode = node.addNode(name, nodeTypeName);
+                subNode = addSubnodeWithPrimaryType(node, name, map);
             } else {
-                subNode = node.addNode(name);
+                subNode = addSubnodeWithoutPrimaryType(node, name, map);
             }
             updateNode(subNode, map);
         } else if (obj instanceof Collection) {
@@ -138,6 +130,35 @@ public class Importer {
                 addSubnode(node, name, item);
             }
         }
+    }
+
+    private Node addSubnodeWithoutPrimaryType(Node node, String name, Map map) throws RepositoryException {
+        Node subNode;
+        Method method = ReflectionUtils.getMethod(node, "addNodeWithUuid",
+                String.class, String.class);
+        if (addUuid && map.containsKey(JCR_UUID) && method != null) {
+            subNode = (Node) ReflectionUtils.invokeMethod(method, node, name, map.get(JCR_UUID));
+        } else {
+            subNode = node.addNode(name);
+        }
+        return subNode;
+    }
+
+    private Node addSubnodeWithPrimaryType(Node node, String name, Map map) throws RepositoryException {
+        Node subNode;
+        String nodeTypeName = getPrimaryType(map);
+        if (addUnknownTypes) {
+            NodeTypeUtils.createNodeType(node.getSession(), nodeTypeName);
+        }
+        Method method = ReflectionUtils.getMethod(node, "addNodeWithUuid",
+                String.class, String.class, String.class);
+
+        if (addUuid && map.containsKey(JCR_UUID) && method != null) {
+            subNode = (Node) ReflectionUtils.invokeMethod(method, node, name, nodeTypeName, map.get(JCR_UUID));
+        } else {
+            subNode = node.addNode(name, nodeTypeName);
+        }
+        return subNode;
     }
 
     private String getPrimaryType(Map map) {
@@ -213,12 +234,11 @@ public class Importer {
     }
 
     private void setUuid(Node node, String uuid) {
-        try {
-            Method setter = node.getClass().getMethod("setIdentifier", String.class);
-            setter.invoke(node, uuid);
-        } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
-            LOG.debug("While trying to set the uuid the following exception was thrown: " + e.getMessage(), e);
+        Method setter = ReflectionUtils.getMethod(node, "setIdentifier", String.class);
+        if (setter != null) {
+            ReflectionUtils.invokeMethod(setter, node, uuid);
         }
+
     }
 
     private Value toJcrValue(Session session, Object value, String propertyName) throws RepositoryException {

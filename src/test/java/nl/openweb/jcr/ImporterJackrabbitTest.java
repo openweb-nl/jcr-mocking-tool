@@ -33,7 +33,7 @@ public class ImporterJackrabbitTest extends AbstractImporterJsonTest {
             return session.getRootNode();
         })
                 .addMixins(true)
-                .addUuid(false)
+                .addUuid(true)
                 .addUnknownTypes(true)
                 .saveSession(true)
                 .build();

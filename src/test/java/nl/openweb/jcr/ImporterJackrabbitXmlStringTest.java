@@ -44,7 +44,7 @@ public class ImporterJackrabbitXmlStringTest extends AbstractImporterTest {
             return session.getRootNode();
         })
                 .addMixins(true)
-                .addUuid(false)
+                .addUuid(true)
                 .addUnknownTypes(true)
                 .saveSession(true)
                 .build();
