@@ -32,6 +32,7 @@ import nl.openweb.jcr.domain.NodeBean;
 import nl.openweb.jcr.domain.PropertyBean;
 import nl.openweb.jcr.json.JsonUtils;
 import nl.openweb.jcr.utils.NodeTypeUtils;
+import nl.openweb.jcr.utils.PathUtils;
 import nl.openweb.jcr.utils.ReflectionUtils;
 
 /**
@@ -71,33 +72,101 @@ public class Importer {
     }
 
     public Node createNodesFromJson(String json) throws IOException, RepositoryException {
-        return createNodeFromNodeBean(JsonUtils.parseJsonMap(json));
+        return createNodesFromJson(json, null, null);
+    }
+
+    public Node createNodesFromJson(String json, String path) throws IOException, RepositoryException {
+        return createNodesFromJson(json, path, null);
+    }
+
+    public Node createNodesFromJson(String json, String path, String intermediateNodeType) throws IOException, RepositoryException {
+        return createNodeFromNodeBean(JsonUtils.parseJsonMap(json), path, intermediateNodeType);
     }
 
     public Node createNodesFromJson(InputStream inputStream) throws IOException, RepositoryException {
-        return createNodeFromNodeBean(JsonUtils.parseJsonMap(inputStream));
+        return createNodesFromJson(inputStream, null, null);
+    }
+
+    public Node createNodesFromJson(InputStream inputStream, String path) throws IOException, RepositoryException {
+        return createNodesFromJson(inputStream, path, null);
+    }
+
+    public Node createNodesFromJson(InputStream inputStream, String path, String intermediateNodeType) throws IOException, RepositoryException {
+        return createNodeFromNodeBean(JsonUtils.parseJsonMap(inputStream), path, intermediateNodeType);
     }
 
     public Node createNodesFromXml(String xml) throws IOException, RepositoryException, JAXBException {
-        return this.createNodesFromXml(new ByteArrayInputStream(xml.getBytes()));
+        return createNodesFromXml(xml, null);
+    }
+
+    public Node createNodesFromXml(String xml, String path) throws IOException, RepositoryException, JAXBException {
+        return createNodesFromXml(xml, path, null);
+    }
+
+    public Node createNodesFromXml(String xml, String path, String intermediateNodeType) throws IOException, RepositoryException, JAXBException {
+        return this.createNodesFromXml(new ByteArrayInputStream(xml.getBytes()), path, intermediateNodeType);
     }
 
     public Node createNodesFromXml(InputStream inputStream) throws IOException, RepositoryException, JAXBException {
+        return createNodesFromXml(inputStream, null, null);
+    }
+
+    public Node createNodesFromXml(InputStream inputStream, String path) throws IOException, RepositoryException, JAXBException {
+        return createNodesFromXml(inputStream, path, null);
+    }
+
+    public Node createNodesFromXml(InputStream inputStream, String path, String intermediateNodeType) throws IOException, RepositoryException, JAXBException {
         Unmarshaller unmarshaller = jaxbContext.createUnmarshaller();
         Object unmarshaled = unmarshaller.unmarshal(inputStream);
         if (unmarshaled instanceof NodeBean) {
-            return createNodeFromNodeBean(NodeBeanUtils.nodeBeanToMap((NodeBean) unmarshaled));
+            return createNodeFromNodeBean(NodeBeanUtils.nodeBeanToMap((NodeBean) unmarshaled), path, intermediateNodeType);
         } else {
             throw new JcrImporterException("The given XML file is not of the right format");
         }
     }
 
-    private Node createNodeFromNodeBean(Map<String, Object> map) {
+
+    private Node createNodeFromNodeBean(Map<String, Object> map, String path, String intermediateNodeType) {
         try {
-            Node node = rootNodeSupplier.get();
+            Node root = rootNodeSupplier.get();
+            String nodeType = map.containsKey(JCR_PRIMARY_TYPE) ? getPrimaryType(map) : intermediateNodeType;
+            Node node = getOrCreateNode(root, path, intermediateNodeType, nodeType);
             updateNode(node, map);
-            return node;
+            return root;
         } catch (Exception e) {
+            throw new JcrImporterException(e.getMessage(), e);
+        }
+    }
+
+    private Node getOrCreateNode(Node rootNode, String path, String intermediateNodeType, String nodeType) {
+        Node result = rootNode;
+        if (path != null && !path.isEmpty()) {
+            String[] nodes = PathUtils.normalizePath(path).split("/");
+            for (int i = 0; i < nodes.length; i++) {
+                String n = nodes[i];
+                result = getOrCreateNode(i + 1 != nodes.length ? intermediateNodeType : nodeType, result, n);
+            }
+        }
+        return result;
+    }
+
+    private Node getOrCreateNode(String nodeType, Node node, String n) {
+        try {
+            Node result;
+            if (node.hasNode(n)) {
+                result = node.getNode(n);
+            } else {
+                if (nodeType != null && !nodeType.isEmpty()) {
+                    if (addUnknownTypes) {
+                        NodeTypeUtils.createNodeType(node.getSession(), nodeType);
+                    }
+                    result = node.addNode(n, nodeType);
+                } else {
+                    result = node.addNode(n);
+                }
+            }
+            return result;
+        } catch (RepositoryException e) {
             throw new JcrImporterException(e.getMessage(), e);
         }
     }

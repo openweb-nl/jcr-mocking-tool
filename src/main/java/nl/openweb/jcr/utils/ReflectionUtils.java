@@ -10,6 +10,7 @@ import java.lang.reflect.Method;
 public class ReflectionUtils {
 
     private ReflectionUtils() {
+        // to prevent initialization
     }
 
     public static Method getMethod(Object obj, String methodName, Class<?>... parameterTypes) {

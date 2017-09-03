@@ -42,16 +42,20 @@ public abstract class AbstractImporterTest {
         shutdown();
     }
 
+    protected String getImportPath() {
+        return "";
+    }
+
     protected abstract void shutdown() throws Exception;
 
     protected abstract Importer createImporter() throws Exception;
 
     @Test
     public void propertyTest() throws RepositoryException {
-        propertyBasicValidationForSingleValue(rootNode, "rootNodeProperty", PropertyType.STRING, "rootNodePropertyValue", Value::getString);
-        Node subnode = rootNode.getNode("subnode");
+        propertyBasicValidationForSingleValue(getImportPath() != null && !getImportPath().isEmpty()? rootNode.getNode(getImportPath()) : rootNode, "rootNodeProperty", PropertyType.STRING, "rootNodePropertyValue", Value::getString);
+        Node subnode = rootNode.getNode(getImportPath() + "subnode");
         propertyBasicValidationForSingleValue(subnode, "parentNodeProperty", PropertyType.STRING, "parentNodePropertyValue", Value::getString);
-        Node subsubnode = rootNode.getNode("subnode/subsubnode");
+        Node subsubnode = rootNode.getNode(getImportPath() + "subnode/subsubnode");
         propertyBasicValidationForSingleValue(subsubnode, "singleValueString", PropertyType.STRING, "stringValue", Value::getString);
         propertyBasicValidationForMultiValue(subsubnode, "multivalueString", PropertyType.STRING, new Object[]{"stringValue01", "stringValue02", "stringValue03"}, Value::getString);
         propertyBasicValidationForSingleValue(subsubnode, "singleValueBoolean", PropertyType.BOOLEAN, true, Value::getBoolean);
@@ -67,10 +71,10 @@ public abstract class AbstractImporterTest {
 
     @Test
     public void sameNameSiblingsTest() throws RepositoryException {
-        Node sameNameSibling1 = rootNode.getNode("subnode/sameNameSiblings");
+        Node sameNameSibling1 = rootNode.getNode(getImportPath() + "subnode/sameNameSiblings");
         Assert.assertNotNull(sameNameSibling1);
         propertyBasicValidationForSingleValue(sameNameSibling1, "singleValueString", PropertyType.STRING, "stringValue1", Value::getString);
-        Node sameNameSibling2 = rootNode.getNode("subnode/sameNameSiblings[2]");
+        Node sameNameSibling2 = rootNode.getNode(getImportPath() + "subnode/sameNameSiblings[2]");
         Assert.assertNotNull(sameNameSibling2);
         propertyBasicValidationForSingleValue(sameNameSibling2, "singleValueString", PropertyType.STRING, "stringValue2", Value::getString);
     }
@@ -78,12 +82,11 @@ public abstract class AbstractImporterTest {
     @Test
     public void identifierTest() throws RepositoryException {
         assertEquals("cafebabe-cafe-babe-cafe-babecafebabe", rootNode.getIdentifier());
-        assertEquals("bd5f5985-d7c5-4cb2-9bd0-f927d9dd5a4c", rootNode.getNode("subnode").getIdentifier());
     }
 
     @Test
     public void mixinTest() throws RepositoryException {
-        Node node = rootNode.getNode("subnode/subsubnode");
+        Node node = rootNode.getNode(getImportPath() + "subnode/subsubnode");
         Property property = node.getProperty("jcr:mixinTypes");
         for (Value v : property.getValues()) {
             MatcherAssert.assertThat("Unexpected mixin", v.getString(),
@@ -92,13 +95,13 @@ public abstract class AbstractImporterTest {
         assertTrue(node.isNodeType("mix:test"));
         assertNotNull(node.getMixinNodeTypes());
 
-        assertTrue(rootNode.getNode("subnode/subsubnode").isNodeType("mix:referenceable"));
+        assertTrue(rootNode.getNode(getImportPath() + "subnode/subsubnode").isNodeType("mix:referenceable"));
     }
 
     @Test
     public void nodeTypeTest() throws RepositoryException {
-        Assert.assertTrue(rootNode.getNode("subnode").isNodeType("jmt:folder"));
-        Assert.assertTrue(rootNode.getNode("subnode/subsubnode").isNodeType("jmt:item"));
+        Assert.assertTrue(rootNode.getNode(getImportPath() + "subnode").isNodeType("jmt:folder"));
+        Assert.assertTrue(rootNode.getNode(getImportPath() + "subnode/subsubnode").isNodeType("jmt:item"));
 
     }
 
