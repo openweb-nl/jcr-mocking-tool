@@ -17,8 +17,14 @@
 package nl.openweb.jcr;
 
 import javax.jcr.*;
+import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.stream.Collectors;
 
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
@@ -136,6 +142,11 @@ public abstract class AbstractImporterTest {
                 assertEquals(expectedValues[i], extractor.apply(values[i]));
             }
         }
+    }
+
+    protected String loadFileAsString(String file) throws URISyntaxException, IOException {
+        URI uri = getClass().getClassLoader().getResource(file).toURI();
+        return Files.readAllLines(Paths.get(uri)).stream().collect(Collectors.joining("\n"));
     }
 
     interface ExtractValue {
