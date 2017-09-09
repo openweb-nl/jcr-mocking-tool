@@ -12,6 +12,7 @@ public class JsonImporterWitPathTest extends AbstractImporterWithPathTest {
     public void init() throws Exception {
         try (InputStream inputStream = getClass().getClassLoader().getResourceAsStream("nodes.json")) {
             Importer importer = createImporter();
+            importer.createNodesFromJson("{}", "/some");
             rootNode = importer.createNodesFromJson(inputStream, getImportPath());
         }
     }

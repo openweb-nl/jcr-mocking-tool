@@ -1,0 +1,66 @@
+package nl.openweb.jcr;
+
+import javax.jcr.Node;
+import javax.jcr.RepositoryException;
+import javax.jcr.Session;
+import javax.jcr.SimpleCredentials;
+import java.io.IOException;
+import java.net.URISyntaxException;
+
+import org.junit.Test;
+
+
+import static org.junit.Assert.assertEquals;
+
+/**
+ * @author Ebrahim Aharpour
+ * @since 9/9/2017
+ */
+public class ImporterReflectionTest {
+
+    @Test
+    public void importerTest() throws RepositoryException, IOException, URISyntaxException {
+
+        try (InMemoryJcrRepository inMemoryJcrRepository = new InMemoryJcrRepository()) {
+            Importer importer = new Importer.Builder(() -> {
+                Session session = inMemoryJcrRepository.login(new SimpleCredentials("admin", "admin".toCharArray()));
+                return session.getRootNode();
+            })
+                    .addMixins(true)
+                    .addUuid(true)
+                    .addUnknownTypes(true)
+                    .saveSession(true)
+                    .build();
+            Node rootNode = importer.createNodesFromJson("{\n" +
+                    "  \"subnode\": {\n" +
+                    "    \"jcr:uuid\": \"e01ee3c8-dcbf-4bf8-9dc7-e08a425c259e\",\n" +
+                    "    \"ns:stringProperty\": \"value\",\n" +
+                    "    \"ns:longProperty\": 4,\n" +
+                    "    \"subsubnode\": {\n" +
+                    "      \"jcr:primaryType\": \"ns:subtype\",\n" +
+                    "      \"jcr:uuid\": \"16e2251d-1b33-438a-801f-9ce0ee6accaa\"\n" +
+                    "    },\n" +
+                    "    \"subsubnode2\": {\n" +
+                    "      \"jcr:primaryType\": \"\",\n" +
+                    "      \"jcr:uuid\": \"689a5373-4a94-4818-aaef-273e8d2d8836\"\n" +
+                    "    }\n" +
+                    "  }\n" +
+                    "}");
+            Node subnode = rootNode.getNode("subnode");
+            assertEquals("e01ee3c8-dcbf-4bf8-9dc7-e08a425c259e", subnode.getIdentifier());
+            assertEquals("nt:unstructured", subnode.getPrimaryNodeType().getName());
+            assertEquals("value", subnode.getProperty("ns:stringProperty").getString());
+            assertEquals(4L, subnode.getProperty("ns:longProperty").getLong());
+            Node subsubnode = rootNode.getNode("subnode/subsubnod");
+            assertEquals("16e2251d-1b33-438a-801f-9ce0ee6accaa", subsubnode.getIdentifier());
+            assertEquals("ns:subtype", subsubnode.getPrimaryNodeType().getName());
+            Node subsubnod2 = rootNode.getNode("subnode/subsubnode2");
+            assertEquals("689a5373-4a94-4818-aaef-273e8d2d8836", subsubnod2.getIdentifier());
+            assertEquals("nt:unstructured", subsubnod2.getPrimaryNodeType().getName());
+        }
+
+
+    }
+
+
+}
