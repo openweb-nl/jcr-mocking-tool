@@ -3,7 +3,6 @@ package nl.openweb.jcr;
 import javax.jcr.RepositoryException;
 import javax.jcr.Session;
 import javax.jcr.SimpleCredentials;
-import javax.xml.bind.UnmarshalException;
 import java.io.IOException;
 
 import org.junit.Test;
@@ -35,7 +34,7 @@ public class ErrorHandlingTest {
         importer.createNodesFromJson("{}");
     }
 
-    @Test(expected = UnmarshalException.class)
+    @Test(expected = JcrImporterException.class)
     public void malformedXmlTest() throws Exception {
         try (InMemoryJcrRepository inMemoryJcrRepository = new InMemoryJcrRepository()){
             Importer importer = new Importer.Builder(() -> {
