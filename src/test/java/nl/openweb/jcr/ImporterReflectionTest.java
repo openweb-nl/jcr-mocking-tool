@@ -66,7 +66,7 @@ public class ImporterReflectionTest {
             assertEquals("nt:unstructured", subnode.getPrimaryNodeType().getName());
             assertEquals("value", subnode.getProperty("ns:stringProperty").getString());
             assertEquals(4L, subnode.getProperty("ns:longProperty").getLong());
-            Node subsubnode = rootNode.getNode("subnode/subsubnod");
+            Node subsubnode = rootNode.getNode("subnode/subsubnode");
             assertEquals("16e2251d-1b33-438a-801f-9ce0ee6accaa", subsubnode.getIdentifier());
             assertEquals("ns:subtype", subsubnode.getPrimaryNodeType().getName());
             Node subsubnod2 = rootNode.getNode("subnode/subsubnode2");

@@ -198,7 +198,7 @@ public class Importer {
         Node subNode;
         if (obj instanceof Map) {
             Map map = (Map) obj;
-            if (map.containsKey(JCR_PRIMARY_TYPE)) {
+            if (map.containsKey(JCR_PRIMARY_TYPE) && !"".equals(map.get(JCR_PRIMARY_TYPE))) {
                 subNode = addSubnodeWithPrimaryType(node, name, map);
             } else {
                 subNode = addSubnodeWithoutPrimaryType(node, name, map);
