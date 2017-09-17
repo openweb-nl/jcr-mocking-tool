@@ -97,11 +97,14 @@ public class Importer {
 
     public Node createNodesFromJson(InputStream inputStream, String path, String intermediateNodeType) {
         try {
+            validate(inputStream);
             return createNodeFromNodeBean(JsonUtils.parseJsonMap(inputStream), path, intermediateNodeType);
         } catch (IOException e) {
             throw new JcrImporterException(e.getMessage(), e);
         }
     }
+
+
 
     public Node createNodesFromXml(String xml) {
         return createNodesFromXml(xml, null);
@@ -125,6 +128,7 @@ public class Importer {
 
     public Node createNodesFromXml(InputStream inputStream, String path, String intermediateNodeType) {
         try {
+            validate(inputStream);
             Unmarshaller unmarshaller = jaxbContext.createUnmarshaller();
             Object unmarshaled = unmarshaller.unmarshal(inputStream);
             if (unmarshaled instanceof NodeBean) {
@@ -134,6 +138,12 @@ public class Importer {
             }
         } catch (JAXBException e) {
             throw new JcrImporterException(e.getMessage(), e);
+        }
+    }
+
+    private void validate(InputStream inputStream) {
+        if (inputStream == null) {
+            throw new JcrImporterException("InputSteam may not be null.");
         }
     }
 

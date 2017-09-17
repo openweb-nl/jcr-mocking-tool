@@ -19,6 +19,7 @@ import javax.jcr.RepositoryException;
 import javax.jcr.Session;
 import javax.jcr.SimpleCredentials;
 import java.io.IOException;
+import java.io.InputStream;
 
 import org.junit.Test;
 
@@ -47,6 +48,29 @@ public class ErrorHandlingTest {
     public void nullSupplier() throws IOException, RepositoryException {
         Importer importer = new Importer.Builder(null).addUuid(true).build();
         importer.createNodesFromJson("{}");
+    }
+
+    @Test(expected = JcrImporterException.class)
+    public void nullXmlInputSteamTest() throws Exception {
+        try (InMemoryJcrRepository inMemoryJcrRepository = new InMemoryJcrRepository()){
+            Importer importer = new Importer.Builder(() -> {
+                Session session = inMemoryJcrRepository.login(new SimpleCredentials("admin", "admin".toCharArray()));
+                return session.getRootNode();
+            }).addUuid(false).build();
+            importer.createNodesFromXml((InputStream) null);
+        }
+    }
+
+
+    @Test(expected = JcrImporterException.class)
+    public void nullJsonInputSteamTest() throws Exception {
+        try (InMemoryJcrRepository inMemoryJcrRepository = new InMemoryJcrRepository()){
+            Importer importer = new Importer.Builder(() -> {
+                Session session = inMemoryJcrRepository.login(new SimpleCredentials("admin", "admin".toCharArray()));
+                return session.getRootNode();
+            }).addUuid(true).build();
+            importer.createNodesFromJson((InputStream) null);
+        }
     }
 
     @Test(expected = JcrImporterException.class)
