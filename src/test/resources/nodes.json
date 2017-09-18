@@ -39,5 +39,9 @@
     }, {
       "singleValueString" : "stringValue2"
     } ]
+  },
+  "ns:namespacedSubnode" : {
+    "jcr:primaryType" : "jmt:folder",
+    "nns:property" : "namespaced property"
   }
 }

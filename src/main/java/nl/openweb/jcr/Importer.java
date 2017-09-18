@@ -238,6 +238,9 @@ public class Importer {
         String nodeTypeName = getPrimaryType(map);
         if (addUnknownTypes) {
             NodeTypeUtils.createNodeType(node.getSession(), nodeTypeName);
+            if (name.contains(":")) {
+                NodeTypeUtils.getOrRegisterNamespace(node.getSession(), name);
+            }
         }
         Method method = ReflectionUtils.getMethod(node, "addNodeWithUuid",
                 String.class, String.class, String.class);
