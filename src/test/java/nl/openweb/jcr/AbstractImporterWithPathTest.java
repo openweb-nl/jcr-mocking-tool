@@ -59,6 +59,7 @@ public abstract class AbstractImporterWithPathTest extends AbstractImporterXmlTe
         Node someNode = rootNode.getNode("some");
         assertEquals(expectedIntermediateNodeType(), someNode.getPrimaryNodeType().getName());
         assertEquals("jmt:folder", someNode.getNode("path").getPrimaryNodeType().getName());
+        assertEquals("cafebabe-cafe-babe-cafe-babecafebab1", someNode.getNode("path").getIdentifier());
 
     }
 

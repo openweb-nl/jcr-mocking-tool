@@ -3,7 +3,7 @@
     "primitiveType" : "Name",
     "value" : "jmt:folder"
   },
-  "jcr:uuid" : "cafebabe-cafe-babe-cafe-babecafebabe",
+  "jcr:uuid" : "cafebabe-cafe-babe-cafe-babecafebab1",
   "rootNodeProperty" : "rootNodePropertyValue",
   "subnode" : {
     "jcr:primaryType" : "jmt:folder",

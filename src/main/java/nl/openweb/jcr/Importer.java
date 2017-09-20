@@ -105,7 +105,6 @@ public class Importer {
     }
 
 
-
     public Node createNodesFromXml(String xml) {
         return createNodesFromXml(xml, null);
     }
@@ -151,8 +150,7 @@ public class Importer {
     private Node createNodeFromNodeBean(Map<String, Object> map, String path, String intermediateNodeType) {
         try {
             Node root = rootNodeSupplier.get();
-            String nodeType = map.containsKey(JCR_PRIMARY_TYPE) ? getPrimaryType(map) : intermediateNodeType;
-            Node node = getOrCreateNode(root, path, intermediateNodeType, nodeType);
+            Node node = getOrCreateNode(root, path, intermediateNodeType, map);
             updateNode(node, map);
             return root;
         } catch (Exception e) {
@@ -160,30 +158,31 @@ public class Importer {
         }
     }
 
-    private Node getOrCreateNode(Node rootNode, String path, String intermediateNodeType, String nodeType) {
+    private Node getOrCreateNode(Node rootNode, String path, String intermediateNodeType, Map<String, Object> map) {
         Node result = rootNode;
         if (path != null && !path.isEmpty()) {
             String[] nodes = PathUtils.normalizePath(path).split("/");
             for (int i = 0; i < nodes.length; i++) {
                 String n = nodes[i];
-                result = getOrCreateNode(i + 1 != nodes.length ? intermediateNodeType : nodeType, result, n);
+                String nodeType = i + 1 == nodes.length && map.containsKey(JCR_PRIMARY_TYPE) ? getPrimaryType(map) : intermediateNodeType;
+                result = getOrCreateNode(nodeType, result, n, i + 1 == nodes.length ? (String) map.get(JCR_UUID) : null);
             }
         }
         return result;
     }
 
-    private Node getOrCreateNode(String nodeType, Node node, String n) {
+    private Node getOrCreateNode(String nodeType, Node node, String name, String uuid) {
         try {
             Node result;
-            if (node.hasNode(n)) {
-                result = node.getNode(n);
+            if (node.hasNode(name)) {
+                result = node.getNode(name);
             } else if (nodeType != null && !nodeType.isEmpty()) {
                 if (addUnknownTypes) {
                     NodeTypeUtils.createNodeType(node.getSession(), nodeType);
                 }
-                result = node.addNode(n, nodeType);
+                result = addSubnodeWithPrimaryType(node, name, nodeType, uuid);
             } else {
-                result = node.addNode(n);
+                result = addSubnodeWithoutPrimaryType(node, name, uuid);
             }
             return result;
         } catch (RepositoryException e) {
@@ -209,9 +208,9 @@ public class Importer {
         if (obj instanceof Map) {
             Map map = (Map) obj;
             if (map.containsKey(JCR_PRIMARY_TYPE) && !"".equals(map.get(JCR_PRIMARY_TYPE))) {
-                subNode = addSubnodeWithPrimaryType(node, name, map);
+                subNode = addSubnodeWithPrimaryType(node, name, getPrimaryType(map), (String) map.get(JCR_UUID));
             } else {
-                subNode = addSubnodeWithoutPrimaryType(node, name, map);
+                subNode = addSubnodeWithoutPrimaryType(node, name, (String) map.get(JCR_UUID));
             }
             updateNode(subNode, map);
         } else if (obj instanceof Collection) {
@@ -221,21 +220,20 @@ public class Importer {
         }
     }
 
-    private Node addSubnodeWithoutPrimaryType(Node node, String name, Map map) throws RepositoryException {
+    private Node addSubnodeWithoutPrimaryType(Node node, String name, String uuid) throws RepositoryException {
         Node subNode;
         Method method = ReflectionUtils.getMethod(node, "addNodeWithUuid",
                 String.class, String.class);
-        if (addUuid && map.containsKey(JCR_UUID) && method != null) {
-            subNode = (Node) ReflectionUtils.invokeMethod(method, node, name, map.get(JCR_UUID));
+        if (addUuid && uuid != null && method != null) {
+            subNode = (Node) ReflectionUtils.invokeMethod(method, node, name, uuid);
         } else {
             subNode = node.addNode(name);
         }
         return subNode;
     }
 
-    private Node addSubnodeWithPrimaryType(Node node, String name, Map map) throws RepositoryException {
+    private Node addSubnodeWithPrimaryType(Node node, String name, String nodeTypeName, String uuid) throws RepositoryException {
         Node subNode;
-        String nodeTypeName = getPrimaryType(map);
         if (addUnknownTypes) {
             NodeTypeUtils.createNodeType(node.getSession(), nodeTypeName);
             if (name.contains(":")) {
@@ -245,8 +243,8 @@ public class Importer {
         Method method = ReflectionUtils.getMethod(node, "addNodeWithUuid",
                 String.class, String.class, String.class);
 
-        if (addUuid && map.containsKey(JCR_UUID) && method != null) {
-            subNode = (Node) ReflectionUtils.invokeMethod(method, node, name, nodeTypeName, map.get(JCR_UUID));
+        if (addUuid && uuid != null && method != null) {
+            subNode = (Node) ReflectionUtils.invokeMethod(method, node, name, nodeTypeName, uuid);
         } else {
             subNode = node.addNode(name, nodeTypeName);
         }

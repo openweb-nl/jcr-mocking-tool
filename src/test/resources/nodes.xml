@@ -24,6 +24,9 @@
   <sv:property sv:name="rootNodeProperty" sv:type="String">
     <sv:value>rootNodePropertyValue</sv:value>
   </sv:property>
+  <sv:property sv:name="jcr:uuid" sv:type="String">
+    <sv:value>cafebabe-cafe-babe-cafe-babecafebab1</sv:value>
+  </sv:property>
   <sv:node sv:name="subnode">
     <sv:property sv:name="jcr:primaryType" sv:type="Name">
       <sv:value>jmt:folder</sv:value>

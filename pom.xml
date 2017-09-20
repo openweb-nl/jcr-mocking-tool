@@ -105,7 +105,7 @@
     <dependency>
       <groupId>nl.openweb.jcr</groupId>
       <artifactId>in-memory-jcr</artifactId>
-      <version>1.2.0</version>
+      <version>1.2.1-SNAPSHOT</version>
       <scope>test</scope>
     </dependency>
     <dependency>
