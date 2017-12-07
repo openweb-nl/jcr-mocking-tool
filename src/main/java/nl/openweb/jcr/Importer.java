@@ -49,13 +49,13 @@ public class Importer {
     private final boolean addMixins;
     private final boolean addUuid;
     private final boolean addUnknownTypes;
-    private final SupplierWithException<Node> rootNodeSupplier;
+    private final Node rootNode;
     private JAXBContext jaxbContext;
 
     private Importer(Builder builder) {
         try {
             this.addMixins = builder.addMixins;
-            this.rootNodeSupplier = builder.rootNodeSupplier;
+            this.rootNode = builder.rootNodeSupplier.get();
             this.addUuid = builder.addUuid;
             this.setProtectedProperties = builder.setProtectedProperties;
             this.saveSession = builder.saveSession;
@@ -66,7 +66,7 @@ public class Importer {
             set.add(JCR_UUID);
             this.protectedProperties = Collections.unmodifiableSet(set);
             this.jaxbContext = JAXBContext.newInstance(NodeBean.class, PropertyBean.class);
-        } catch (JAXBException e) {
+        } catch (Exception e) {
             throw new JcrImporterException(e.getMessage(), e);
         }
     }
@@ -149,10 +149,9 @@ public class Importer {
 
     private Node createNodeFromNodeBean(Map<String, Object> map, String path, String intermediateNodeType) {
         try {
-            Node root = rootNodeSupplier.get();
-            Node node = getOrCreateNode(root, path, intermediateNodeType, map);
+            Node node = getOrCreateNode(rootNode, path, intermediateNodeType, map);
             updateNode(node, map);
-            return root;
+            return rootNode;
         } catch (Exception e) {
             throw new JcrImporterException(e.getMessage(), e);
         }
