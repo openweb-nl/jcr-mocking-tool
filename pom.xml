@@ -20,7 +20,7 @@
 
   <groupId>nl.openweb.jcr</groupId>
   <artifactId>jcr-mocking-tool</artifactId>
-  <version>1.3.2-SNAPSHOT</version>
+  <version>1.3.2</version>
 
   <name>JCR Mocking Tool</name>
   <description>This a tool to facilitate setup of a JCR repository for testing purposes.</description>
@@ -52,7 +52,7 @@
     <connection>scm:git:git@github.com:openweb-nl/jcr-mocking-tool.git</connection>
     <developerConnection>scm:git:git@github.com:openweb-nl/jcr-mocking-tool.git</developerConnection>
     <url>https://github.com/openweb-nl/jcr-mocking-tool</url>
-    <tag>HEAD</tag>
+    <tag>jcr-mocking-tool-1.3.2</tag>
   </scm>
 
   <distributionManagement>
