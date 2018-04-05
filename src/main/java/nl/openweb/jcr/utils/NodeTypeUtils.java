@@ -16,21 +16,21 @@
 
 package nl.openweb.jcr.utils;
 
-import javax.jcr.NamespaceRegistry;
-import javax.jcr.RepositoryException;
-import javax.jcr.Session;
-import javax.jcr.ValueFactory;
-import javax.jcr.nodetype.NodeTypeDefinition;
-import javax.jcr.nodetype.NodeTypeManager;
-
-import org.apache.jackrabbit.core.SessionImpl;
 import org.apache.jackrabbit.core.nodetype.NodeTypeDefinitionImpl;
 import org.apache.jackrabbit.spi.Name;
 import org.apache.jackrabbit.spi.NameFactory;
 import org.apache.jackrabbit.spi.QNodeDefinition;
 import org.apache.jackrabbit.spi.QPropertyDefinition;
 import org.apache.jackrabbit.spi.commons.QNodeTypeDefinitionImpl;
+import org.apache.jackrabbit.spi.commons.conversion.NamePathResolver;
 import org.apache.jackrabbit.spi.commons.name.NameFactoryImpl;
+
+import javax.jcr.NamespaceRegistry;
+import javax.jcr.RepositoryException;
+import javax.jcr.Session;
+import javax.jcr.ValueFactory;
+import javax.jcr.nodetype.NodeTypeDefinition;
+import javax.jcr.nodetype.NodeTypeManager;
 
 public class NodeTypeUtils {
     private NodeTypeUtils() {
@@ -93,9 +93,19 @@ public class NodeTypeUtils {
         String namespace = getOrRegisterNamespace(session, superType);
         supertypes = new Name[]{nameFactory.create(namespace, getLocalName(superType))};
         QNodeTypeDefinitionImpl ntd = new QNodeTypeDefinitionImpl(name, supertypes, new Name[0], isMixin, false, true, true, null, new QPropertyDefinition[0], new QNodeDefinition[0]);
-        NodeTypeDefinition nodeTypeDefinition = new NodeTypeDefinitionImpl(ntd, (SessionImpl) session, valueFactory);
+        NodeTypeDefinition nodeTypeDefinition = new NodeTypeDefinitionImpl(ntd, getNamePathResolver(session), valueFactory);
         nodeTypeManager.registerNodeType(nodeTypeDefinition, false);
     }
+
+    private static NamePathResolver getNamePathResolver(Session session) {
+        NamePathResolver result = null;
+        Session realSession = ReflectionUtils.unwrapSessionDecorator(session);
+        if (realSession instanceof NamePathResolver) {
+            result = (NamePathResolver) realSession;
+        }
+        return result;
+    }
+
 
     private static String getLocalName(String nodeType) {
         return nodeType.substring(nodeType.indexOf(':') + 1);

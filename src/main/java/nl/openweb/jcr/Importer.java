@@ -16,6 +16,14 @@
 
 package nl.openweb.jcr;
 
+import nl.openweb.jcr.domain.NodeBean;
+import nl.openweb.jcr.domain.PropertyBean;
+import nl.openweb.jcr.json.JsonUtils;
+import nl.openweb.jcr.utils.NodeTypeUtils;
+import nl.openweb.jcr.utils.PathUtils;
+import nl.openweb.jcr.utils.ReflectionUtils;
+import org.apache.commons.beanutils.ConvertUtilsBean;
+
 import javax.jcr.*;
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
@@ -26,14 +34,7 @@ import java.io.InputStream;
 import java.lang.reflect.Method;
 import java.util.*;
 
-import org.apache.commons.beanutils.ConvertUtilsBean;
-
-import nl.openweb.jcr.domain.NodeBean;
-import nl.openweb.jcr.domain.PropertyBean;
-import nl.openweb.jcr.json.JsonUtils;
-import nl.openweb.jcr.utils.NodeTypeUtils;
-import nl.openweb.jcr.utils.PathUtils;
-import nl.openweb.jcr.utils.ReflectionUtils;
+import static nl.openweb.jcr.utils.ReflectionUtils.unwrapNodeDecorator;
 
 /**
  * Created by Ebrahim on 5/20/2017.
@@ -221,12 +222,13 @@ public class Importer {
 
     private Node addSubnodeWithoutPrimaryType(Node node, String name, String uuid) throws RepositoryException {
         Node subNode;
-        Method method = ReflectionUtils.getMethod(node, "addNodeWithUuid",
+        Node realNode = unwrapNodeDecorator(node);
+        Method method = ReflectionUtils.getMethod(realNode, "addNodeWithUuid",
                 String.class, String.class);
         if (addUuid && uuid != null && method != null) {
-            subNode = (Node) ReflectionUtils.invokeMethod(method, node, name, uuid);
+            subNode = (Node) ReflectionUtils.invokeMethod(method, realNode, name, uuid);
         } else {
-            subNode = node.addNode(name);
+            subNode = realNode.addNode(name);
         }
         return subNode;
     }
@@ -239,13 +241,14 @@ public class Importer {
                 NodeTypeUtils.getOrRegisterNamespace(node.getSession(), name);
             }
         }
-        Method method = ReflectionUtils.getMethod(node, "addNodeWithUuid",
+        Node realNode = unwrapNodeDecorator(node);
+        Method method = ReflectionUtils.getMethod(realNode, "addNodeWithUuid",
                 String.class, String.class, String.class);
 
         if (addUuid && uuid != null && method != null) {
-            subNode = (Node) ReflectionUtils.invokeMethod(method, node, name, nodeTypeName, uuid);
+            subNode = (Node) ReflectionUtils.invokeMethod(method, realNode, name, nodeTypeName, uuid);
         } else {
-            subNode = node.addNode(name, nodeTypeName);
+            subNode = realNode.addNode(name, nodeTypeName);
         }
         return subNode;
     }

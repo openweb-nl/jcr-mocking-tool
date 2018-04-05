@@ -15,6 +15,9 @@
  */
 package nl.openweb.jcr.utils;
 
+import javax.jcr.Node;
+import javax.jcr.Session;
+import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
@@ -43,6 +46,35 @@ public class ReflectionUtils {
         try {
             return method.invoke(obj, args);
         } catch (IllegalAccessException | InvocationTargetException e) {
+            throw new RuntimeReflectionException(e);
+        }
+    }
+
+    public static Session unwrapSessionDecorator(Session session) {
+        Session result = session;
+        if (session != null && "org.hippoecm.repository.impl.SessionDecorator".equals(session.getClass().getName())) {
+            Class<?> clazz = session.getClass().getSuperclass();
+            return (Session) getPrivateField(clazz, session, "session");
+        }
+        return result;
+    }
+
+
+    public static Node unwrapNodeDecorator(Node node) {
+        Node result = node;
+        if (node != null && "org.hippoecm.repository.impl.NodeDecorator".equals(node.getClass().getName())) {
+            Class<?> clazz = node.getClass().getSuperclass();
+            result = (Node) getPrivateField(clazz, node, "node");
+        }
+        return result;
+    }
+
+    private static Object getPrivateField(Class<?> clazz, Object object, String fieldName) {
+        try {
+            Field field = clazz.getDeclaredField(fieldName);
+            field.setAccessible(true);
+            return field.get(object);
+        } catch (NoSuchFieldException | IllegalAccessException e) {
             throw new RuntimeReflectionException(e);
         }
     }
