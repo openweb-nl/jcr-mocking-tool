@@ -15,6 +15,9 @@
  */
 package nl.openweb.jcr;
 
+import nl.openweb.jcr.importer.JcrImporter;
+import nl.openweb.jcr.importer.JsonImporter;
+
 /**
  * @author Ebrahim Aharpour
  * @since 9/3/2017
@@ -30,7 +33,7 @@ public class JsonStringImporterWitPathAndTypeTest extends AbstractImporterWithPa
 
     @Override
     public void init() throws Exception {
-        Importer importer = createImporter();
-        rootNode = importer.createNodesFromJson(loadFileAsString("nodes.json"), getImportPath(), INTERMEDIATE_TYPE);
+        JcrImporter importer = createImporter(JsonImporter.FORMAT);
+        rootNode = importer.createNodes(loadFileAsString("nodes.json"), getImportPath(), INTERMEDIATE_TYPE);
     }
 }

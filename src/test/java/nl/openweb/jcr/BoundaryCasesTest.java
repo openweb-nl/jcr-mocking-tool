@@ -15,13 +15,14 @@
  */
 package nl.openweb.jcr;
 
-import javax.jcr.*;
-import java.io.IOException;
-import java.net.URISyntaxException;
-
+import nl.openweb.jcr.importer.JcrImporter;
+import nl.openweb.jcr.importer.JsonImporter;
 import org.junit.Assert;
 import org.junit.Test;
 
+import javax.jcr.*;
+import java.io.IOException;
+import java.net.URISyntaxException;
 
 import static org.junit.Assert.assertEquals;
 
@@ -35,10 +36,11 @@ public class BoundaryCasesTest {
     public void unknownPropertyTest() throws RepositoryException, IOException, URISyntaxException {
 
         try (InMemoryJcrRepository inMemoryJcrRepository = new InMemoryJcrRepository()) {
-            Node rootNode = new Importer.Builder(() -> {
-                Session session = inMemoryJcrRepository.login(new SimpleCredentials("admin", "admin".toCharArray()));
-                return session.getRootNode();
-            }).addUnknownTypes(true).build().createNodesFromJson("{\"namespace:unknown\": \"value01\", \"namespaceLessProperty\": \"value02\"}");
+            Session session = inMemoryJcrRepository.login(new SimpleCredentials("admin", "admin".toCharArray()));
+            Node rootNode = session.getRootNode();
+            JcrImporter importer = new JsonImporter(rootNode)
+                    .addUnknownTypes(true);
+            importer.createNodes("{\"namespace:unknown\": \"value01\", \"namespaceLessProperty\": \"value02\"}");
             assertEquals("value01", rootNode.getProperty("namespace:unknown").getString());
             assertEquals("value02", rootNode.getProperty("namespaceLessProperty").getString());
 
@@ -48,34 +50,37 @@ public class BoundaryCasesTest {
     @Test
     public void nullValuePropertyTest() throws IOException, RepositoryException, URISyntaxException {
         try (InMemoryJcrRepository inMemoryJcrRepository = new InMemoryJcrRepository()) {
-            Node rootNode = new Importer.Builder(() -> {
-                Session session = inMemoryJcrRepository.login(new SimpleCredentials("admin", "admin".toCharArray()));
-                return session.getRootNode();
-            }).addUnknownTypes(true).build().createNodesFromJson("{\"namespace:unknown\": null}");
-            Assert.assertFalse(rootNode.hasNode("namespace:unknown"));
-            Assert.assertFalse(rootNode.hasProperty("namespace:unknown"));
+            Session session = inMemoryJcrRepository.login(new SimpleCredentials("admin", "admin".toCharArray()));
+            Node rootNode = session.getRootNode();
+            JcrImporter importer = new JsonImporter(rootNode)
+                    .addUnknownTypes(true);
+            Node node = importer.createNodes("{\"namespace:unknown\": null}");
+            Assert.assertFalse(node.hasNode("namespace:unknown"));
+            Assert.assertFalse(node.hasProperty("namespace:unknown"));
         }
     }
 
     @Test
     public void nullValuePropertyTest2() throws IOException, RepositoryException, URISyntaxException {
         try (InMemoryJcrRepository inMemoryJcrRepository = new InMemoryJcrRepository()) {
-            Node rootNode = new Importer.Builder(() -> {
-                Session session = inMemoryJcrRepository.login(new SimpleCredentials("admin", "admin".toCharArray()));
-                return session.getRootNode();
-            }).addUnknownTypes(true).build().createNodesFromJson("{\"namespace:unknown\": { \"primitiveType\" : \"Name\", \"value\" : null  }}");
-            Assert.assertFalse(rootNode.hasNode("namespace:unknown"));
-            Assert.assertFalse(rootNode.hasProperty("namespace:unknown"));
+            Session session = inMemoryJcrRepository.login(new SimpleCredentials("admin", "admin".toCharArray()));
+            Node rootNode = session.getRootNode();
+            JcrImporter importer = new JsonImporter(rootNode)
+                    .addUnknownTypes(true);
+            Node node = importer.createNodes("{\"namespace:unknown\": { \"primitiveType\" : \"Name\", \"value\" : null  }}");
+            Assert.assertFalse(node.hasNode("namespace:unknown"));
+            Assert.assertFalse(node.hasProperty("namespace:unknown"));
         }
     }
 
     @Test
     public void multiValuePropertyWithNullValue() throws IOException, RepositoryException, URISyntaxException {
         try (InMemoryJcrRepository inMemoryJcrRepository = new InMemoryJcrRepository()) {
-            Node rootNode = new Importer.Builder(() -> {
-                Session session = inMemoryJcrRepository.login(new SimpleCredentials("admin", "admin".toCharArray()));
-                return session.getRootNode();
-            }).addUnknownTypes(true).build().createNodesFromJson("{\"namespace:unknown\": [ null , \"value01\", \"value02\"]}");
+            Session session = inMemoryJcrRepository.login(new SimpleCredentials("admin", "admin".toCharArray()));
+            Node rootNode = session.getRootNode();
+            JcrImporter importer = new JsonImporter(rootNode)
+                    .addUnknownTypes(true);
+            importer.createNodes("{\"namespace:unknown\": [ null , \"value01\", \"value02\"]}");
             Property property = rootNode.getProperty("namespace:unknown");
             Assert.assertTrue(property.isMultiple());
             Value[] values = property.getValues();

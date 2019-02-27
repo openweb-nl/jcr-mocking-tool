@@ -15,6 +15,9 @@
  */
 package nl.openweb.jcr;
 
+import nl.openweb.jcr.importer.JcrImporter;
+import nl.openweb.jcr.importer.XmlImporter;
+
 import java.io.InputStream;
 
 /**
@@ -26,8 +29,8 @@ public class XmlImporterWitPathTest extends AbstractImporterWithPathTest {
     @Override
     public void init() throws Exception {
         try (InputStream inputStream = getClass().getClassLoader().getResourceAsStream("nodes.xml")) {
-            Importer importer = createImporter();
-            rootNode = importer.createNodesFromXml(inputStream, getImportPath());
+            JcrImporter importer = createImporter(XmlImporter.FORMAT);
+            rootNode = importer.createNodes(inputStream, getImportPath());
         }
     }
 }

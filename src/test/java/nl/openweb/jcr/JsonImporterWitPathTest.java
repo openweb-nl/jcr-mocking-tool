@@ -15,6 +15,9 @@
  */
 package nl.openweb.jcr;
 
+import nl.openweb.jcr.importer.JcrImporter;
+import nl.openweb.jcr.importer.JsonImporter;
+
 import java.io.InputStream;
 
 /**
@@ -26,9 +29,9 @@ public class JsonImporterWitPathTest extends AbstractImporterWithPathTest {
     @Override
     public void init() throws Exception {
         try (InputStream inputStream = getClass().getClassLoader().getResourceAsStream("nodes.json")) {
-            Importer importer = createImporter();
-            importer.createNodesFromJson("{}", "/some");
-            rootNode = importer.createNodesFromJson(inputStream, getImportPath());
+            JcrImporter importer = createImporter(JsonImporter.FORMAT);
+            importer.createNodes("{}", "/some");
+            rootNode = importer.createNodes(inputStream, getImportPath());
         }
     }
 }

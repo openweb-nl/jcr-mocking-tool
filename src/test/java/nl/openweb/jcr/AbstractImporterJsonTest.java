@@ -15,6 +15,9 @@
  */
 package nl.openweb.jcr;
 
+import nl.openweb.jcr.importer.JcrImporter;
+import nl.openweb.jcr.importer.JsonImporter;
+
 import java.io.InputStream;
 
 public abstract class AbstractImporterJsonTest extends AbstractImporterTest {
@@ -22,8 +25,8 @@ public abstract class AbstractImporterJsonTest extends AbstractImporterTest {
     @Override
     public void init() throws Exception {
         try (InputStream inputStream = getClass().getClassLoader().getResourceAsStream("nodes.json")) {
-            Importer importer = createImporter();
-            rootNode = importer.createNodesFromJson(inputStream);
+            JcrImporter importer = createImporter(JsonImporter.FORMAT);
+            rootNode = importer.createNodes(inputStream);
         }
     }
 }

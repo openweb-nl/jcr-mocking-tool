@@ -15,49 +15,32 @@
  */
 package nl.openweb.jcr;
 
-import javax.jcr.RepositoryException;
-import javax.jcr.Session;
-import javax.jcr.SimpleCredentials;
-import java.io.IOException;
-import java.io.InputStream;
-
+import nl.openweb.jcr.importer.JcrImporter;
+import nl.openweb.jcr.importer.JsonImporter;
+import nl.openweb.jcr.importer.XmlImporter;
 import org.junit.Test;
 
-public class ErrorHandlingTest {
+import javax.jcr.Session;
+import javax.jcr.SimpleCredentials;
+import java.io.InputStream;
 
-    @Test(expected = JcrImporterException.class)
-    public void supplierThrowsException() throws IOException, RepositoryException {
-        Importer importer = new Importer.Builder(() -> {
-            throw new RepositoryException();
-        }).build();
-        importer.createNodesFromJson("{}");
-    }
+public class ErrorHandlingTest {
 
     @Test
     public void addUuidWhileNotSupported() throws Exception {
         try (InMemoryJcrRepository inMemoryJcrRepository = new InMemoryJcrRepository()){
-            Importer importer = new Importer.Builder(() -> {
-                Session session = inMemoryJcrRepository.login(new SimpleCredentials("admin", "admin".toCharArray()));
-                return session.getRootNode();
-            }).addUuid(true).build();
-            importer.createNodesFromJson("{}");
+            Session session = inMemoryJcrRepository.login(new SimpleCredentials("admin", "admin".toCharArray()));
+            JcrImporter importer = new JsonImporter(session.getRootNode());
+            importer.createNodes("{}");
         }
-    }
-
-    @Test(expected = IllegalArgumentException.class)
-    public void nullSupplier() throws IOException, RepositoryException {
-        Importer importer = new Importer.Builder(null).addUuid(true).build();
-        importer.createNodesFromJson("{}");
     }
 
     @Test(expected = JcrImporterException.class)
     public void nullXmlInputSteamTest() throws Exception {
         try (InMemoryJcrRepository inMemoryJcrRepository = new InMemoryJcrRepository()){
-            Importer importer = new Importer.Builder(() -> {
-                Session session = inMemoryJcrRepository.login(new SimpleCredentials("admin", "admin".toCharArray()));
-                return session.getRootNode();
-            }).addUuid(false).build();
-            importer.createNodesFromXml((InputStream) null);
+            Session session = inMemoryJcrRepository.login(new SimpleCredentials("admin", "admin".toCharArray()));
+            JcrImporter importer = new XmlImporter(session.getRootNode()).addUuid(false);
+            importer.createNodes((InputStream) null);
         }
     }
 
@@ -65,33 +48,27 @@ public class ErrorHandlingTest {
     @Test(expected = JcrImporterException.class)
     public void nullJsonInputSteamTest() throws Exception {
         try (InMemoryJcrRepository inMemoryJcrRepository = new InMemoryJcrRepository()){
-            Importer importer = new Importer.Builder(() -> {
-                Session session = inMemoryJcrRepository.login(new SimpleCredentials("admin", "admin".toCharArray()));
-                return session.getRootNode();
-            }).addUuid(true).build();
-            importer.createNodesFromJson((InputStream) null);
+            Session session = inMemoryJcrRepository.login(new SimpleCredentials("admin", "admin".toCharArray()));
+            JcrImporter importer = new JsonImporter(session.getRootNode()).addUuid(true);
+            importer.createNodes((InputStream) null);
         }
     }
 
     @Test(expected = JcrImporterException.class)
     public void malformedXmlTest() throws Exception {
         try (InMemoryJcrRepository inMemoryJcrRepository = new InMemoryJcrRepository()){
-            Importer importer = new Importer.Builder(() -> {
-                Session session = inMemoryJcrRepository.login(new SimpleCredentials("admin", "admin".toCharArray()));
-                return session.getRootNode();
-            }).addUuid(true).build();
-            importer.createNodesFromXml("{}");
+            Session session = inMemoryJcrRepository.login(new SimpleCredentials("admin", "admin".toCharArray()));
+            JcrImporter importer = new XmlImporter(session.getRootNode()).addUuid(true);
+            importer.createNodes("{}");
         }
     }
 
     @Test(expected = JcrImporterException.class)
     public void unexpectedXmlTest() throws Exception {
         try (InMemoryJcrRepository inMemoryJcrRepository = new InMemoryJcrRepository()){
-            Importer importer = new Importer.Builder(() -> {
-                Session session = inMemoryJcrRepository.login(new SimpleCredentials("admin", "admin".toCharArray()));
-                return session.getRootNode();
-            }).addUuid(true).build();
-            importer.createNodesFromXml(
+            Session session = inMemoryJcrRepository.login(new SimpleCredentials("admin", "admin".toCharArray()));
+            JcrImporter importer = new XmlImporter(session.getRootNode()).addUuid(true);
+            importer.createNodes(
                     "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" +
                             "<sv:property xmlns:sv=\"http://www.jcp.org/jcr/sv/1.0\" sv:name=\"rootNodeProperty\" sv:type=\"String\">" +
                             "<sv:value>rootNodePropertyValue</sv:value>" +

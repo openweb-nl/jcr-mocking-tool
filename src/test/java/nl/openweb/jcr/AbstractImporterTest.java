@@ -26,6 +26,7 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.stream.Collectors;
 
+import nl.openweb.jcr.importer.JcrImporter;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.junit.After;
@@ -54,7 +55,7 @@ public abstract class AbstractImporterTest {
 
     protected abstract void shutdown() throws Exception;
 
-    protected abstract Importer createImporter() throws Exception;
+    protected abstract JcrImporter createImporter(String format) throws Exception;
 
     @Test
     public void propertyTest() throws RepositoryException {

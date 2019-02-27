@@ -1,35 +1,13 @@
-/*
- * Copyright 2017 Open Web IT B.V. (https://www.openweb.nl/)
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+package nl.openweb.jcr.importer;
 
-package nl.openweb.jcr;
-
-import nl.openweb.jcr.domain.NodeBean;
-import nl.openweb.jcr.domain.PropertyBean;
-import nl.openweb.jcr.json.JsonUtils;
+import nl.openweb.jcr.JcrImporterException;
+import nl.openweb.jcr.NodeBeanUtils;
 import nl.openweb.jcr.utils.NodeTypeUtils;
 import nl.openweb.jcr.utils.PathUtils;
 import nl.openweb.jcr.utils.ReflectionUtils;
 import org.apache.commons.beanutils.ConvertUtilsBean;
 
 import javax.jcr.*;
-import javax.xml.bind.JAXBContext;
-import javax.xml.bind.JAXBException;
-import javax.xml.bind.Unmarshaller;
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Method;
 import java.util.*;
@@ -37,118 +15,104 @@ import java.util.*;
 import static nl.openweb.jcr.utils.ReflectionUtils.unwrapNodeDecorator;
 
 /**
- * Created by Ebrahim on 5/20/2017.
+ * @author Ivor
  */
-public class Importer {
+public abstract class AbstractJcrImporter implements JcrImporter {
 
-    public static final String JCR_PRIMARY_TYPE = "jcr:primaryType";
-    public static final String JCR_MIXIN_TYPES = "jcr:mixinTypes";
-    public static final String JCR_UUID = "jcr:uuid";
     private final Set<String> protectedProperties;
-    private final boolean setProtectedProperties;
-    private final boolean saveSession;
-    private final boolean addMixins;
-    private final boolean addUuid;
-    private final boolean addUnknownTypes;
+    private boolean addMixins = true;
+    private boolean addUuid = false;
+    private boolean setProtectedProperties = false;
+    private boolean saveSession = true;
+    private boolean addUnknownTypes = false;
     private final Node rootNode;
-    private JAXBContext jaxbContext;
 
-    private Importer(Builder builder) {
-        try {
-            this.addMixins = builder.addMixins;
-            this.rootNode = builder.rootNodeSupplier.get();
-            this.addUuid = builder.addUuid;
-            this.setProtectedProperties = builder.setProtectedProperties;
-            this.saveSession = builder.saveSession;
-            this.addUnknownTypes = builder.addUnknownTypes;
-            HashSet<String> set = new HashSet<>();
-            set.add(JCR_PRIMARY_TYPE);
-            set.add(JCR_MIXIN_TYPES);
-            set.add(JCR_UUID);
-            this.protectedProperties = Collections.unmodifiableSet(set);
-            this.jaxbContext = JAXBContext.newInstance(NodeBean.class, PropertyBean.class);
-        } catch (Exception e) {
-            throw new JcrImporterException(e.getMessage(), e);
+    public AbstractJcrImporter(Node rootNode) {
+        this.rootNode = rootNode;
+        if (rootNode == null) {
+            throw new JcrImporterException("rootNode is not allowed to be null");
         }
+        HashSet<String> set = new HashSet<>();
+        set.add(JCR_PRIMARY_TYPE);
+        set.add(JCR_MIXIN_TYPES);
+        set.add(JCR_UUID);
+        this.protectedProperties = Collections.unmodifiableSet(set);
     }
 
-    public Node createNodesFromJson(String json) {
-        return createNodesFromJson(json, null, null);
+    @Override
+    public JcrImporter addMixins(boolean addMixins) {
+        this.addMixins = addMixins;
+        return this;
     }
 
-    public Node createNodesFromJson(String json, String path) {
-        return createNodesFromJson(json, path, null);
+    public boolean isAddMixins() {
+        return addMixins;
     }
 
-    public Node createNodesFromJson(String json, String path, String intermediateNodeType) {
-        try {
-            return createNodeFromNodeBean(JsonUtils.parseJsonMap(json), path, intermediateNodeType);
-        } catch (IOException e) {
-            throw new JcrImporterException(e.getMessage(), e);
-        }
+    @Override
+    public AbstractJcrImporter addUuid(boolean addUuid) {
+        this.addUuid = addUuid;
+        return this;
     }
 
-    public Node createNodesFromJson(InputStream inputStream) {
-        return createNodesFromJson(inputStream, null, null);
+    public boolean isAddUuid() {
+        return addUuid;
     }
 
-    public Node createNodesFromJson(InputStream inputStream, String path) {
-        return createNodesFromJson(inputStream, path, null);
+    @Override
+    public AbstractJcrImporter setProtectedProperties(boolean setProtectedProperties) {
+        this.setProtectedProperties = setProtectedProperties;
+        return this;
     }
 
-    public Node createNodesFromJson(InputStream inputStream, String path, String intermediateNodeType) {
-        try {
-            validate(inputStream);
-            return createNodeFromNodeBean(JsonUtils.parseJsonMap(inputStream), path, intermediateNodeType);
-        } catch (IOException e) {
-            throw new JcrImporterException(e.getMessage(), e);
-        }
+    public boolean isSetProtectedProperties() {
+        return setProtectedProperties;
     }
 
-
-    public Node createNodesFromXml(String xml) {
-        return createNodesFromXml(xml, null);
+    @Override
+    public AbstractJcrImporter saveSession(boolean saveSession) {
+        this.saveSession = saveSession;
+        return this;
     }
 
-    public Node createNodesFromXml(String xml, String path) {
-        return createNodesFromXml(xml, path, null);
+    public boolean isSaveSession() {
+        return saveSession;
     }
 
-    public Node createNodesFromXml(String xml, String path, String intermediateNodeType) {
-        return this.createNodesFromXml(new ByteArrayInputStream(xml.getBytes()), path, intermediateNodeType);
+    @Override
+    public AbstractJcrImporter addUnknownTypes(boolean addUnknownTypes) {
+        this.addUnknownTypes = addUnknownTypes;
+        return this;
     }
 
-    public Node createNodesFromXml(InputStream inputStream) {
-        return createNodesFromXml(inputStream, null, null);
+    public boolean isAddUnknownTypes() {
+        return addUnknownTypes;
     }
 
-    public Node createNodesFromXml(InputStream inputStream, String path) {
-        return createNodesFromXml(inputStream, path, null);
-    }
-
-    public Node createNodesFromXml(InputStream inputStream, String path, String intermediateNodeType) {
-        try {
-            validate(inputStream);
-            Unmarshaller unmarshaller = jaxbContext.createUnmarshaller();
-            Object unmarshaled = unmarshaller.unmarshal(inputStream);
-            if (unmarshaled instanceof NodeBean) {
-                return createNodeFromNodeBean(NodeBeanUtils.nodeBeanToMap((NodeBean) unmarshaled), path, intermediateNodeType);
-            } else {
-                throw new JcrImporterException("The given XML file is not of the right format");
-            }
-        } catch (JAXBException e) {
-            throw new JcrImporterException(e.getMessage(), e);
-        }
-    }
-
-    private void validate(InputStream inputStream) {
-        if (inputStream == null) {
-            throw new JcrImporterException("InputSteam may not be null.");
-        }
+    @Override
+    public Node getRootNode() {
+        return rootNode;
     }
 
 
-    private Node createNodeFromNodeBean(Map<String, Object> map, String path, String intermediateNodeType) {
+    public Node createNodes(String source) {
+        return createNodes(source, null, null);
+    }
+
+    public Node createNodes(String source, String path) {
+        return createNodes(source, path, null);
+    }
+
+    public Node createNodes(InputStream inputStream) {
+        return createNodes(inputStream, null, null);
+    }
+
+    public Node createNodes(InputStream inputStream, String path) {
+        return createNodes(inputStream, path, null);
+    }
+
+
+    Node createNodeFromNodeBean(Map<String, Object> map, String path, String intermediateNodeType) {
         try {
             Node node = getOrCreateNode(rootNode, path, intermediateNodeType, map);
             updateNode(node, map);
@@ -364,55 +328,5 @@ public class Importer {
         return result;
     }
 
-    public static class Builder {
-        private boolean addMixins = true;
-        private boolean addUuid = false;
-        private boolean setProtectedProperties = false;
-        private boolean saveSession = true;
-        private boolean addUnknownTypes = false;
-        private final SupplierWithException<Node> rootNodeSupplier;
-
-
-        public Builder(SupplierWithException<Node> rootNodeSupplier) {
-            this.rootNodeSupplier = rootNodeSupplier;
-            if (this.rootNodeSupplier == null) {
-                throw new IllegalArgumentException("supplier is required.");
-            }
-        }
-
-        public Builder addMixins(boolean addMixins) {
-            this.addMixins = addMixins;
-            return this;
-        }
-
-        public Builder addUuid(boolean addUuid) {
-            this.addUuid = addUuid;
-            return this;
-        }
-
-        public Builder setProtectedProperties(boolean setProtectedProperties) {
-            this.setProtectedProperties = setProtectedProperties;
-            return this;
-        }
-
-        public Builder saveSession(boolean saveSession) {
-            this.saveSession = saveSession;
-            return this;
-        }
-
-        public Builder addUnknownTypes(boolean addUnknownTypes) {
-            this.addUnknownTypes = addUnknownTypes;
-            return this;
-        }
-
-        public Importer build() {
-            return new Importer(this);
-        }
-    }
-
-    @FunctionalInterface
-    public interface SupplierWithException<T> {
-        T get() throws Exception;
-    }
 
 }
