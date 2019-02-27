@@ -15,15 +15,16 @@
  */
 package nl.openweb.jcr;
 
+import nl.openweb.jcr.importer.JcrImporter;
+import nl.openweb.jcr.importer.JsonImporter;
+import org.junit.Test;
+
 import javax.jcr.Node;
 import javax.jcr.RepositoryException;
 import javax.jcr.Session;
 import javax.jcr.SimpleCredentials;
 import java.io.IOException;
 import java.net.URISyntaxException;
-
-import org.junit.Test;
-
 
 import static org.junit.Assert.assertEquals;
 
@@ -37,16 +38,13 @@ public class ImporterReflectionTest {
     public void importerTest() throws RepositoryException, IOException, URISyntaxException {
 
         try (InMemoryJcrRepository inMemoryJcrRepository = new InMemoryJcrRepository()) {
-            Importer importer = new Importer.Builder(() -> {
-                Session session = inMemoryJcrRepository.login(new SimpleCredentials("admin", "admin".toCharArray()));
-                return session.getRootNode();
-            })
+            Session session = inMemoryJcrRepository.login(new SimpleCredentials("admin", "admin".toCharArray()));
+            JcrImporter importer = new JsonImporter(session.getRootNode())
                     .addMixins(true)
                     .addUuid(true)
                     .addUnknownTypes(true)
-                    .saveSession(true)
-                    .build();
-            Node rootNode = importer.createNodesFromJson("{\n" +
+                    .saveSession(true);
+            Node rootNode = importer.createNodes("{\n" +
                     "  \"subnode\": {\n" +
                     "    \"jcr:uuid\": \"e01ee3c8-dcbf-4bf8-9dc7-e08a425c259e\",\n" +
                     "    \"ns:stringProperty\": \"value\",\n" +

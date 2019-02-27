@@ -15,6 +15,9 @@
  */
 package nl.openweb.jcr;
 
+import nl.openweb.jcr.importer.JcrImporter;
+import nl.openweb.jcr.importer.XmlImporter;
+
 /**
  * @author Ebrahim Aharpour
  * @since 9/3/2017
@@ -30,7 +33,7 @@ public class XmlStringImporterWitPathAndTypeTest extends AbstractImporterWithPat
 
     @Override
     public void init() throws Exception {
-        Importer importer = createImporter();
-        rootNode = importer.createNodesFromXml(loadFileAsString("nodes.xml"), getImportPath(), INTERMEDIATE_TYPE);
+        JcrImporter importer = createImporter(XmlImporter.FORMAT);
+        rootNode = importer.createNodes(loadFileAsString("nodes.xml"), getImportPath(), INTERMEDIATE_TYPE);
     }
 }

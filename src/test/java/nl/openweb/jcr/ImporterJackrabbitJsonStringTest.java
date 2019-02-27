@@ -16,6 +16,10 @@
 
 package nl.openweb.jcr;
 
+import nl.openweb.jcr.importer.JcrImporter;
+import nl.openweb.jcr.importer.JsonImporter;
+import nl.openweb.jcr.importer.XmlImporter;
+
 import javax.jcr.RepositoryException;
 import javax.jcr.Session;
 import javax.jcr.SimpleCredentials;
@@ -28,22 +32,28 @@ public class ImporterJackrabbitJsonStringTest extends AbstractImporterTest {
     @Override
     public void init() throws Exception {
         String json = loadFileAsString("nodes.json");
-        Importer importer = createImporter();
-        rootNode = importer.createNodesFromJson(json);
+        JcrImporter importer = createImporter(JsonImporter.FORMAT);
+        rootNode = importer.createNodes(json);
     }
 
     @Override
-    protected Importer createImporter() throws IOException, RepositoryException, URISyntaxException {
+    protected JcrImporter createImporter(String format) throws IOException, RepositoryException, URISyntaxException {
         inMemoryJcrRepository = new InMemoryJcrRepository();
-        return new Importer.Builder(() -> {
-            Session session = inMemoryJcrRepository.login(new SimpleCredentials("admin", "admin".toCharArray()));
-            return session.getRootNode();
-        })
+        Session session = inMemoryJcrRepository.login(new SimpleCredentials("admin", "admin".toCharArray()));
+        JcrImporter importer;
+        if (JsonImporter.FORMAT.equals(format)) {
+            importer = new JsonImporter(session.getRootNode());
+        } else if (XmlImporter.FORMAT.equals(format)) {
+            importer = new XmlImporter(session.getRootNode());
+        } else {
+            throw new IllegalArgumentException("Unknown format: " + format);
+        }
+
+        return importer
                 .addMixins(true)
                 .addUuid(true)
                 .addUnknownTypes(true)
-                .saveSession(true)
-                .build();
+                .saveSession(true);
     }
 
     @Override

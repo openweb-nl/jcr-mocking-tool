@@ -16,24 +16,33 @@
 
 package nl.openweb.jcr;
 
-import javax.jcr.*;
-import java.io.IOException;
-
+import nl.openweb.jcr.importer.JcrImporter;
+import nl.openweb.jcr.importer.JsonImporter;
+import nl.openweb.jcr.importer.XmlImporter;
 import org.apache.sling.testing.mock.jcr.MockJcr;
+
+import javax.jcr.*;
 
 public class ImporterSlingXmlTest extends AbstractImporterXmlTest {
 
 
     @Override
-    protected Importer createImporter() throws IOException, RepositoryException {
-        return new Importer.Builder(() -> {
-            Session session = MockJcr.newSession();
-            return session.getRootNode();
-        })
+    protected JcrImporter createImporter(String format) throws RepositoryException {
+        Session session = MockJcr.newSession();
+        JcrImporter importer;
+        if (JsonImporter.FORMAT.equals(format)) {
+            importer = new JsonImporter(session.getRootNode());
+        } else if (XmlImporter.FORMAT.equals(format)) {
+            importer = new XmlImporter(session.getRootNode());
+        } else {
+            throw new IllegalArgumentException("Unknown format: " + format);
+        }
+
+        return importer
                 .addMixins(false)
                 .addUuid(true)
-                .setProtectedProperties(true)
-                .build();
+                .setProtectedProperties(true);
+
     }
 
     @Override

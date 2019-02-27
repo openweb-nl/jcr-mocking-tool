@@ -20,7 +20,7 @@
 
   <groupId>nl.openweb.jcr</groupId>
   <artifactId>jcr-mocking-tool</artifactId>
-  <version>1.3.4-SNAPSHOT</version>
+  <version>1.4.0-SNAPSHOT</version>
 
   <name>JCR Mocking Tool</name>
   <description>This a tool to facilitate setup of a JCR repository for testing purposes.</description>
